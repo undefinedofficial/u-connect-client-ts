@@ -1,6 +1,6 @@
 {
   "name": "@u-connect/client-ts",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "private": true,
   "type": "module",
   "files": [
@@ -15,7 +15,7 @@
     "type-check": "vue-tsc --build --force",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@msgpack/msgpack": "^3.0.0-beta2"
   },
   "devDependencies": {

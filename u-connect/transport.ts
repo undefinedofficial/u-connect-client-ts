@@ -89,27 +89,27 @@ export interface TransportPackageServer<S extends TranspontServicePath, D extend
 }
 
 export type TransportService<S extends Record<string, (...request: any) => any>> = {
-  unary<K extends keyof S, O extends UnaryResponse<any>>(
+  unary<K extends keyof S>(
     method: K,
     request: Parameters<S[K]>[0],
     options?: TransportServiceOptions
-  ): ReturnType<S[K]> extends UnaryResponse<any> ? Promise<O> : void;
+  ): ReturnType<S[K]> extends UnaryResponse<any> ? Promise<ReturnType<S[K]>> : void;
 
-  clientStream<K extends keyof S, O extends IClientStream<any, any, K>>(
+  clientStream<K extends keyof S>(
     method: K,
-    options: TransportServiceOptions
-  ): ReturnType<S[K]> extends IClientStream<any, any, any> ? O : void;
+    options?: TransportServiceOptions
+  ): ReturnType<S[K]> extends IClientStream<any, any, any> ? ReturnType<S[K]> : void;
 
-  serverStream<K extends keyof S, O extends IServerStream<any, S>>(
+  serverStream<K extends keyof S>(
     method: K,
     request: Parameters<S[K]>[0],
-    options: TransportServiceOptions
-  ): ReturnType<S[K]> extends IServerStream<any, any> ? O : void;
+    options?: TransportServiceOptions
+  ): ReturnType<S[K]> extends IServerStream<any, any> ? ReturnType<S[K]> : void;
 
-  duplex<K extends keyof S, O extends IDuplexStream<any, any, K>>(
+  duplex<K extends keyof S>(
     method: K,
-    options: TransportServiceOptions
-  ): ReturnType<S[K]> extends IDuplexStream<any, any> ? O : void;
+    options?: TransportServiceOptions
+  ): ReturnType<S[K]> extends IDuplexStream<any, any> ? ReturnType<S[K]> : void;
 };
 
 export interface Transport {

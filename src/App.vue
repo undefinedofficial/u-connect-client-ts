@@ -67,7 +67,7 @@ import {
   type IServerStream,
   type IDuplexStream,
   type UnaryResponse
-} from "./u-connect";
+} from "../u-connect";
 // import { decode, encode } from "@msgpack/msgpack";
 import USection from "./components/uSection.vue";
 import UFormUnary from "./components/uFormUnary.vue";
@@ -235,7 +235,8 @@ const sayHelloDuplexStream = async () => {
   sayAbortDuplexStream();
   abortDuplexStream = new AbortController();
   isOpenDuplexStream.value = true;
-  duplexStream.value = helloService.duplex("SayHelloDuplexStream", { abort: abortDuplexStream?.signal });
+  const stream = helloService.duplex("SayHelloDuplexStream", { abort: abortDuplexStream?.signal });
+  duplexStream.value = stream;
   duplexStream.value.onMessage((data) => {
     duplexStreamLog.value.push(`say duplex stream response: ${data}`);
   });

@@ -4,6 +4,7 @@ import type { IClientStream, TransportResponse } from "./transport";
 import type { WebSocketTransport } from "./websocket";
 
 export class ClientStream<I, O, M = string> implements IClientStream<I, O, M> {
+  private _isOpen: PromiseValue<void>;
   public result: PromiseValue<TransportResponse<O, M>>;
   public next?: PromiseValue<void>;
 
@@ -12,9 +13,12 @@ export class ClientStream<I, O, M = string> implements IClientStream<I, O, M> {
    */
   constructor(private _transport: WebSocketTransport, private readonly id: number, private readonly method: M) {
     this.result = new PromiseValue();
+    this._isOpen = new PromiseValue();
   }
 
   async send(data: I): Promise<void> {
+    if (!this._isOpen.has()) await this._isOpen.value();
+
     if (this.result.has()) {
       await this.result.value();
       return;
@@ -23,13 +27,17 @@ export class ClientStream<I, O, M = string> implements IClientStream<I, O, M> {
     this.next = new PromiseValue();
     return this.next.value();
   }
-  complete(): Promise<TransportResponse<O, M>> {
+  async complete(): Promise<TransportResponse<O, M>> {
+    if (!this._isOpen.has()) await this._isOpen.value();
+
     this._transport.send({ id: this.id, type: DataType.STREAM_END, method: this.method as any, request: null });
     return this.result.value();
   }
 
   close() {
-    this.result.reject(new Error("Transport closed"));
-    this.next?.reject(new Error("Transport closed"));
+    const e = new Error("Transport closed");
+    this._isOpen.reject(e);
+    this.result.reject(e);
+    this.next?.reject(e);
   }
 }

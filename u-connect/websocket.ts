@@ -21,11 +21,11 @@ import { ClientStream } from "./ClientStream";
 class WebSocketTransportService<S extends Record<string, any>> implements TransportService<S> {
   constructor(private _transport: WebSocketTransport, private _service: TranspontServicePath) {}
 
-  unary<K extends keyof S, O extends UnaryResponse<any>>(
+  unary<K extends keyof S>(
     method: K,
     request: Parameters<S[K]>[0],
     options?: TransportServiceOptions
-  ): ReturnType<S[K]> extends UnaryResponse<any> ? Promise<O> : void {
+  ): ReturnType<S[K]> extends UnaryResponse<any> ? Promise<ReturnType<S[K]>> : void {
     return this._transport
       .sendRequest<Parameters<S[K]>[0], UnaryResponse<any>, string>(
         { id: this._transport.reservateId(), method: `${this._service}.${method as string}`, type: DataType.UNARY_CLIENT, request },
@@ -39,10 +39,10 @@ class WebSocketTransportService<S extends Record<string, any>> implements Transp
       })) as any;
   }
 
-  clientStream<K extends keyof S, O extends IClientStream<any, any, K>>(
+  clientStream<K extends keyof S>(
     method: K,
-    options: TransportServiceOptions
-  ): ReturnType<S[K]> extends IClientStream<any, any, any> ? O : void {
+    options?: TransportServiceOptions
+  ): ReturnType<S[K]> extends IClientStream<any, any, any> ? ReturnType<S[K]> : void {
     const id = this._transport.reservateId();
     const fullMethod = `${this._service}.${method as string}` as TransportMethod<string, string>;
     const clientStream = new ClientStream<any, any, string>(this._transport, id, fullMethod);
@@ -70,11 +70,11 @@ class WebSocketTransportService<S extends Record<string, any>> implements Transp
     return clientStream as any;
   }
 
-  serverStream<K extends keyof S, O extends IServerStream<any, S>>(
+  serverStream<K extends keyof S>(
     method: K,
     request: Parameters<S[K]>[0],
-    options: TransportServiceOptions
-  ): ReturnType<S[K]> extends IServerStream<any, any> ? O : void {
+    options?: TransportServiceOptions
+  ): ReturnType<S[K]> extends IServerStream<any, any> ? ReturnType<S[K]> : void {
     const stream = new ServerStream();
 
     this._transport
@@ -91,10 +91,10 @@ class WebSocketTransportService<S extends Record<string, any>> implements Transp
     return stream as any;
   }
 
-  duplex<K extends keyof S, O extends IDuplexStream<any, any, K>>(
+  duplex<K extends keyof S>(
     method: K,
-    options: TransportServiceOptions
-  ): ReturnType<S[K]> extends IDuplexStream<any, any> ? O : void {
+    options?: TransportServiceOptions
+  ): ReturnType<S[K]> extends IDuplexStream<any, any> ? ReturnType<S[K]> : void {
     const id = this._transport.reservateId();
     const fullMethod = `${this._service}.${method as string}` as any;
     const clientStream = new ClientStream<any, any, K>(this._transport, id, fullMethod);
@@ -120,19 +120,19 @@ class WebSocketTransportService<S extends Record<string, any>> implements Transp
       complete() {
         return clientStream.complete();
       },
-      send(data) {
+      send(data: any) {
         return clientStream.send(data);
       },
-      onMessage(callback) {
+      onMessage(callback: any) {
         serverStream.onMessage(callback);
       },
-      onError(callback) {
+      onError(callback: any) {
         serverStream.onError(callback);
       },
-      onEnd(callback) {
+      onEnd(callback: any) {
         serverStream.onEnd(callback);
       }
-    } as O & void;
+    } as ReturnType<S[K]> & void;
   }
 }
 
