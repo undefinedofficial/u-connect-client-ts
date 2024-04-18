@@ -462,8 +462,13 @@ export class WebSocketTransport implements Transport {
         break;
       }
 
+      case DataType.ABORT: {
+        if (task) task.onError(new MethodError(message.status ?? Status.ABORTED, message.error ?? "Request aborted"));
+        break;
+      }
+
       default:
-        console.error("Unknown message type:", message.type);
+        console.error("Unknown message type:", message);
         break;
     }
   }
