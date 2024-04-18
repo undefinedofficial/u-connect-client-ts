@@ -17,6 +17,7 @@ import { Status } from "./status";
 import { DataType } from "./DataType";
 import { ServerStream } from "./ServerStream";
 import { ClientStream } from "./ClientStream";
+import { EventEmitter } from "./emitter";
 
 class WebSocketTransportService<S extends Record<string, any>> implements TransportService<S> {
   constructor(private _transport: WebSocketTransport, private _service: TranspontServicePath) {}
@@ -42,32 +43,38 @@ class WebSocketTransportService<S extends Record<string, any>> implements Transp
   clientStream<K extends keyof S>(
     method: K,
     options?: TransportServiceOptions
-  ): ReturnType<S[K]> extends IClientStream<any, any, any> ? ReturnType<S[K]> : void {
-    const id = this._transport.reservateId();
-    const fullMethod = `${this._service}.${method as string}` as TransportMethod<string, string>;
-    const clientStream = new ClientStream<any, any, string>(this._transport, id, fullMethod);
+  ): ReturnType<S[K]> extends IClientStream<any, any, any> ? Promise<ReturnType<S[K]>> : void {
+    return new Promise((resolve, reject) => {
+      const id = this._transport.reservateId();
+      const fullMethod = `${this._service}.${method as string}` as TransportMethod<string, string>;
+      const clientStream = new ClientStream<any, any, string>(this._transport, id, fullMethod);
 
-    this._transport
-      .sendRequest<null | undefined, any, string>(
-        { id, method: `${this._service}.${method as string}`, type: DataType.STREAM_CLIENT, request: null },
-        options,
-        (data) => {
-          if (data.type === DataType.STREAM_CLIENT && clientStream.next) return clientStream.next.resolve();
-          clientStream.result.reject(new MethodError(Status.INTERNAL, "Internal server error"));
-        }
-      )
-      .then((res) => {
-        console.log(res);
-
-        clientStream.result.resolve({
-          method: res.method,
-          response: res.response!,
-          status: res.status!,
-          meta: res.meta
+      this._transport
+        .sendRequest<null | undefined, any, string>(
+          { id, method: `${this._service}.${method as string}`, type: DataType.STREAM_CLIENT, request: null },
+          options,
+          (data) => {
+            if (data.type === DataType.STREAM_CLIENT) {
+              resolve(clientStream);
+              clientStream.next();
+              return;
+            }
+            clientStream.error(new MethodError(Status.INTERNAL, "Internal server error"));
+          }
+        )
+        .then((res) =>
+          clientStream.result({
+            method: res.method,
+            response: res.response!,
+            status: res.status!,
+            meta: res.meta
+          })
+        )
+        .catch((e) => {
+          clientStream.error(e);
+          reject(e);
         });
-      })
-      .catch((e) => clientStream.result.reject(e));
-    return clientStream as any;
+    }) as any;
   }
 
   serverStream<K extends keyof S>(
@@ -94,52 +101,59 @@ class WebSocketTransportService<S extends Record<string, any>> implements Transp
   duplex<K extends keyof S>(
     method: K,
     options?: TransportServiceOptions
-  ): ReturnType<S[K]> extends IDuplexStream<any, any> ? ReturnType<S[K]> : void {
-    const id = this._transport.reservateId();
-    const fullMethod = `${this._service}.${method as string}` as any;
-    const clientStream = new ClientStream<any, any, K>(this._transport, id, fullMethod);
-    const serverStream = new ServerStream<any, K>();
+  ): ReturnType<S[K]> extends IDuplexStream<any, any> ? Promise<ReturnType<S[K]>> : void {
+    return new Promise((resolve, reject) => {
+      const id = this._transport.reservateId();
+      const fullMethod = `${this._service}.${method as string}` as any;
+      const clientStream = new ClientStream<any, any, K>(this._transport, id, fullMethod);
+      const serverStream = new ServerStream<any, K>();
 
-    this._transport
-      .sendRequest<null | undefined, any, string>({ id, method: fullMethod, type: DataType.STREAM_DUPLEX }, options, (data) => {
-        if (data.type === DataType.STREAM_CLIENT && clientStream.next) return clientStream.next.resolve();
-        if (data.type === DataType.STREAM_SERVER) return serverStream.InvokeMessage?.(data.response);
-        const e = new MethodError(Status.INTERNAL, "Internal server error");
-        clientStream.reject(e);
-        serverStream.InvokeError?.(e);
-      })
-      .then((res) => {
-        const r = {
-          method: res.method as any,
-          response: res.response,
-          status: res.status!,
-          meta: res.meta
-        };
-        clientStream.result.resolve(r);
-        serverStream.InvokeEnd?.(r);
-      })
-      .catch((e) => {
-        clientStream.reject(e);
-        serverStream.InvokeError?.(e);
-      });
+      const dyplex = {
+        complete() {
+          return clientStream.complete();
+        },
+        send(data: any) {
+          return clientStream.send(data);
+        },
+        onMessage(callback: any) {
+          serverStream.onMessage(callback);
+        },
+        onError(callback: any) {
+          serverStream.onError(callback);
+        },
+        onEnd(callback: any) {
+          serverStream.onEnd(callback);
+        }
+      } as ReturnType<S[K]> & void;
 
-    return {
-      complete() {
-        return clientStream.complete();
-      },
-      send(data: any) {
-        return clientStream.send(data);
-      },
-      onMessage(callback: any) {
-        serverStream.onMessage(callback);
-      },
-      onError(callback: any) {
-        serverStream.onError(callback);
-      },
-      onEnd(callback: any) {
-        serverStream.onEnd(callback);
-      }
-    } as ReturnType<S[K]> & void;
+      this._transport
+        .sendRequest<null | undefined, any, string>({ id, method: fullMethod, type: DataType.STREAM_DUPLEX }, options, (data) => {
+          if (data.type === DataType.STREAM_CLIENT) {
+            resolve(dyplex);
+            clientStream.next();
+            return;
+          }
+          if (data.type === DataType.STREAM_SERVER) return serverStream.InvokeMessage?.(data.response);
+          const e = new MethodError(Status.INTERNAL, "Internal server error");
+          clientStream.error(e);
+          serverStream.InvokeError?.(e);
+        })
+        .then((res) => {
+          const r = {
+            method: res.method as any,
+            response: res.response,
+            status: res.status!,
+            meta: res.meta
+          };
+          clientStream.result(r);
+          serverStream.InvokeEnd?.(r);
+        })
+        .catch((e) => {
+          clientStream.error(e);
+          serverStream.InvokeError?.(e);
+          reject(e);
+        });
+    }) as any;
   }
 }
 
@@ -177,11 +191,6 @@ export interface WebSocketTransportOptions {
   serializer?: WebSocketSerializer;
 
   /**
-   * callback about changing status
-   */
-  status?: (state: WebSocketTransportState) => void;
-
-  /**
    * debug mode loging (default: false)
    */
   debug?: boolean;
@@ -207,9 +216,18 @@ interface ITransportTask<T> {
   onError: (error: Error) => void;
 }
 
+interface WebSocketTransportEvents {
+  status: WebSocketTransportState;
+}
+
+function debugWrite(message: any) {
+  console.info("%c u-connect : ", "color: #42AAFF;", message);
+}
+
 export class WebSocketTransport implements Transport {
-  private readonly _options!: Required<Omit<WebSocketTransportOptions, "status" | "debug">> &
-    Pick<WebSocketTransportOptions, "status" | "debug">;
+  private readonly _options!: Required<Omit<WebSocketTransportOptions, "debug">> & Pick<WebSocketTransportOptions, "debug">;
+
+  private readonly _emitter: EventEmitter<WebSocketTransportEvents>;
 
   /** The websocket instance */
   private _socket!: WebSocket;
@@ -229,11 +247,10 @@ export class WebSocketTransport implements Transport {
     return this._state;
   }
   private set state(state: WebSocketTransportState) {
-    if (this._options.debug)
-      console.info(`WebSocketTransport: state change from ${WebSocketTransportState[this._state]} to ${WebSocketTransportState[state]}`);
+    if (this._options.debug) debugWrite(`state change from ${WebSocketTransportState[this._state]} to ${WebSocketTransportState[state]}`);
 
     this._state = state;
-    this._options.status?.(state);
+    this._emitter.emit("status", state);
   }
 
   constructor(options: WebSocketTransportOptions) {
@@ -246,6 +263,7 @@ export class WebSocketTransport implements Transport {
       ...options
     };
     this._state = WebSocketTransportState.CLOSED;
+    this._emitter = new EventEmitter();
   }
   /**
    * Asynchronously establishes a WebSocket connection and returns a Promise that resolves to the Transport instance.
@@ -269,11 +287,12 @@ export class WebSocketTransport implements Transport {
       this._socket.onopen = () => {
         this.state = WebSocketTransportState.OPEN;
         this._attempts = 0;
+        if (this._options.debug) debugWrite("connected ");
         resolve(this);
       };
 
       this._socket.onerror = (e) => {
-        if (this._options.debug) console.error(e);
+        if (this._options.debug) debugWrite(e);
       };
 
       /**
@@ -298,6 +317,7 @@ export class WebSocketTransport implements Transport {
   async disconnect(): Promise<void> {
     if (this.state === WebSocketTransportState.CLOSED) return;
 
+    if (this._options.debug) debugWrite("disconnect");
     await this.dispose();
   }
 
@@ -315,7 +335,7 @@ export class WebSocketTransport implements Transport {
    * @param {number} attempt - The number of reconnect attempts made so far. Defaults to 0.
    * @return {Promise<Transport>} A Promise that resolves to the Transport instance when the reconnection is successful.
    */
-  private async reconnect(attempt = 0): Promise<Transport> {
+  private async reconnect(attempt: number = 0): Promise<Transport> {
     if (this.state !== WebSocketTransportState.CLOSED) return this;
 
     this.state = WebSocketTransportState.RECONNECTING;
@@ -323,6 +343,7 @@ export class WebSocketTransport implements Transport {
     if (delay === false) return this;
 
     await new Promise((resolve) => setTimeout(resolve, delay));
+    if (this._options.debug) debugWrite("connecting attempt №" + attempt);
     return this.connect();
   }
 
@@ -404,7 +425,7 @@ export class WebSocketTransport implements Transport {
    * Generates a unique ID for the task.
    * @return {number} The unique ID.
    */
-  reservateId(): number {
+  public reservateId(): number {
     return ++this._id;
   }
 
@@ -414,6 +435,7 @@ export class WebSocketTransport implements Transport {
    * @param {TransportServiceOptions} [options] - The options for the message.
    */
   send<I>(message: TransportPackageClient<string, string, I>, options?: TransportServiceOptions) {
+    if (this._options.debug) debugWrite("send data " + message.method);
     this._socket.send(this.serialize(message as TransportPackageClient<any, string, I>, options));
   }
 
@@ -423,18 +445,11 @@ export class WebSocketTransport implements Transport {
    * @return {Promise<void>} A promise that resolves when the message is handled.
    */
   private async onMessage(message: TransportPackageServer<any, string, any>): Promise<void> {
-    if (this.state === WebSocketTransportState.CLOSED) return;
-
     const task = this._tasks.get(message.id);
     switch (message.type) {
-      case DataType.CONNECT:
-        console.log("type CONNECT in received");
-        break;
-      case DataType.DISCONNECT:
-        console.log("type DISCONNECT in received");
-        break;
       case DataType.UNARY_CLIENT: {
         if (task) {
+          if (this._options.debug) debugWrite("unary responce " + message.method);
           this._tasks.delete(message.id);
           // If the message has an error, reject the promise with the error message and status code default to INTERNAL server error.
           if (message.error) task.onError(new MethodError(message.status ?? Status.INTERNAL, message.error));
@@ -443,17 +458,17 @@ export class WebSocketTransport implements Transport {
         break;
       }
 
-      case DataType.UNARY_SERVER:
-        console.log("type UNARY_SERVER in received");
-        break;
-
       case DataType.STREAM_CLIENT:
       case DataType.STREAM_SERVER:
-        if (task) task.onMessage?.(message);
+        if (task) {
+          if (this._options.debug) debugWrite("stream data " + message.method);
+          task.onMessage?.(message);
+        }
         break;
 
       case DataType.STREAM_END: {
         if (task) {
+          if (this._options.debug) debugWrite("stream end " + message.method);
           // If the message has an error, reject the promise with the error message and status code default to INTERNAL server error.
           if (message.error) task.onError(new MethodError(message.status ?? Status.INTERNAL, message.error));
           else task.onEnd(message);
@@ -463,13 +478,37 @@ export class WebSocketTransport implements Transport {
       }
 
       case DataType.ABORT: {
+        if (this._options.debug) debugWrite("Abort request" + message.method);
+
         if (task) task.onError(new MethodError(message.status ?? Status.ABORTED, message.error ?? "Request aborted"));
         break;
       }
+
+      case DataType.CONNECT:
+        console.warn("type CONNECT in received");
+        break;
+      case DataType.DISCONNECT:
+        console.warn("type DISCONNECT in received");
+        break;
+      case DataType.UNARY_SERVER:
+        console.warn("type UNARY_SERVER in received");
+        break;
 
       default:
         console.error("Unknown message type:", message);
         break;
     }
+  }
+
+  public on<K extends keyof WebSocketTransportEvents>(event: K, callback: (arg: WebSocketTransportEvents[K]) => any) {
+    return this._emitter.on(event, callback);
+  }
+
+  public off<K extends keyof WebSocketTransportEvents>(event: K, callback: (arg: WebSocketTransportEvents[K]) => any) {
+    return this._emitter.off(event, callback);
+  }
+
+  public once<K extends keyof WebSocketTransportEvents>(event: K, callback: (arg: WebSocketTransportEvents[K]) => any) {
+    return this._emitter.once(event, callback);
   }
 }

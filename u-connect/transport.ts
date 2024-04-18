@@ -98,7 +98,7 @@ export type TransportService<S extends Record<string, (...request: any) => any>>
   clientStream<K extends keyof S>(
     method: K,
     options?: TransportServiceOptions
-  ): ReturnType<S[K]> extends IClientStream<any, any, any> ? ReturnType<S[K]> : void;
+  ): ReturnType<S[K]> extends IClientStream<any, any, any> ? Promise<ReturnType<S[K]>> : void;
 
   serverStream<K extends keyof S>(
     method: K,
@@ -109,7 +109,7 @@ export type TransportService<S extends Record<string, (...request: any) => any>>
   duplex<K extends keyof S>(
     method: K,
     options?: TransportServiceOptions
-  ): ReturnType<S[K]> extends IDuplexStream<any, any> ? ReturnType<S[K]> : void;
+  ): ReturnType<S[K]> extends IDuplexStream<any, any> ? Promise<ReturnType<S[K]>> : void;
 };
 
 export interface Transport {
