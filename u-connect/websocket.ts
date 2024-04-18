@@ -253,7 +253,7 @@ export class WebSocketTransport implements Transport {
    */
   async connect(): Promise<Transport> {
     return new Promise((resolve) => {
-      if (this.state === WebSocketTransportState.OPEN || this.state === WebSocketTransportState.CONNECTING) resolve(this);
+      if (this.state === WebSocketTransportState.OPEN || this.state === WebSocketTransportState.CONNECTING) return resolve(this);
 
       if (this.state === WebSocketTransportState.CLOSED) this.state = WebSocketTransportState.CONNECTING;
 
