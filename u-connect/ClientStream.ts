@@ -23,15 +23,21 @@ export class ClientStream<I, O, M = string> implements IClientStream<I, O, M> {
       await this.result.value();
       return;
     }
-    this._transport.send({ id: this.id, type: DataType.STREAM_CLIENT, method: this.method as any, request: data });
     this.next = new PromiseValue();
+    this._transport.send({ id: this.id, type: DataType.STREAM_CLIENT, method: this.method as any, request: data });
     return this.next.value();
   }
   async complete(): Promise<TransportResponse<O, M>> {
     if (!this._isOpen.has()) await this._isOpen.value();
 
-    this._transport.send({ id: this.id, type: DataType.STREAM_END, method: this.method as any, request: null });
+    this._transport.send({ id: this.id, type: DataType.STREAM_END, method: this.method as any });
     return this.result.value();
+  }
+
+  reject(e: Error) {
+    this.result.reject(e);
+    this.next?.reject(e);
+    this._isOpen.reject(e);
   }
 
   close() {

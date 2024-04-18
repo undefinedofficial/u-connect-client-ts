@@ -104,17 +104,24 @@ class WebSocketTransportService<S extends Record<string, any>> implements Transp
       .sendRequest<null | undefined, any, string>({ id, method: fullMethod, type: DataType.STREAM_DUPLEX }, options, (data) => {
         if (data.type === DataType.STREAM_CLIENT && clientStream.next) return clientStream.next.resolve();
         if (data.type === DataType.STREAM_SERVER) return serverStream.InvokeMessage?.(data.response);
-        clientStream.result.reject(new MethodError(Status.INTERNAL, "Internal server error"));
+        const e = new MethodError(Status.INTERNAL, "Internal server error");
+        clientStream.reject(e);
+        serverStream.InvokeError?.(e);
       })
-      .then((res) =>
-        clientStream.result.resolve({
+      .then((res) => {
+        const r = {
           method: res.method as any,
           response: res.response,
           status: res.status!,
           meta: res.meta
-        })
-      )
-      .catch((e) => clientStream.result.reject(e));
+        };
+        clientStream.result.resolve(r);
+        serverStream.InvokeEnd?.(r);
+      })
+      .catch((e) => {
+        clientStream.reject(e);
+        serverStream.InvokeError?.(e);
+      });
 
     return {
       complete() {
