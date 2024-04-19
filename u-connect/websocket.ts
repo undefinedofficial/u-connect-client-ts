@@ -43,38 +43,33 @@ class WebSocketTransportService<S extends Record<string, any>> implements Transp
   clientStream<K extends keyof S>(
     method: K,
     options?: TransportServiceOptions
-  ): ReturnType<S[K]> extends IClientStream<any, any, any> ? Promise<ReturnType<S[K]>> : void {
-    return new Promise((resolve, reject) => {
-      const id = this._transport.reservateId();
-      const fullMethod = `${this._service}.${method as string}` as TransportMethod<string, string>;
-      const clientStream = new ClientStream<any, any, string>(this._transport, id, fullMethod);
+  ): ReturnType<S[K]> extends IClientStream<any, any, any> ? ReturnType<S[K]> : void {
+    const id = this._transport.reservateId();
+    const fullMethod = `${this._service}.${method as string}` as TransportMethod<string, string>;
+    const clientStream = new ClientStream<any, any, string>(this._transport, id, fullMethod);
 
-      this._transport
-        .sendRequest<null | undefined, any, string>(
-          { id, method: `${this._service}.${method as string}`, type: DataType.STREAM_CLIENT, request: null },
-          options,
-          (data) => {
-            if (data.type === DataType.STREAM_CLIENT) {
-              resolve(clientStream);
-              clientStream.next();
-              return;
-            }
-            clientStream.error(new MethodError(Status.INTERNAL, "Internal server error"));
+    this._transport
+      .sendRequest<null | undefined, any, string>(
+        { id, method: `${this._service}.${method as string}`, type: DataType.STREAM_CLIENT, request: null },
+        options,
+        (data) => {
+          if (data.type === DataType.STREAM_CLIENT) {
+            clientStream.next();
+            return;
           }
-        )
-        .then((res) =>
-          clientStream.result({
-            method: res.method,
-            response: res.response!,
-            status: res.status!,
-            meta: res.meta
-          })
-        )
-        .catch((e) => {
-          clientStream.error(e);
-          reject(e);
-        });
-    }) as any;
+          clientStream.error(new MethodError(Status.INTERNAL, "Internal server error"));
+        }
+      )
+      .then((res) =>
+        clientStream.result({
+          method: res.method,
+          response: res.response!,
+          status: res.status!,
+          meta: res.meta
+        })
+      )
+      .catch((e) => clientStream.error(e));
+    return clientStream as any;
   }
 
   serverStream<K extends keyof S>(
@@ -101,59 +96,57 @@ class WebSocketTransportService<S extends Record<string, any>> implements Transp
   duplex<K extends keyof S>(
     method: K,
     options?: TransportServiceOptions
-  ): ReturnType<S[K]> extends IDuplexStream<any, any> ? Promise<ReturnType<S[K]>> : void {
-    return new Promise((resolve, reject) => {
-      const id = this._transport.reservateId();
-      const fullMethod = `${this._service}.${method as string}` as any;
-      const clientStream = new ClientStream<any, any, K>(this._transport, id, fullMethod);
-      const serverStream = new ServerStream<any, K>();
+  ): ReturnType<S[K]> extends IDuplexStream<any, any> ? ReturnType<S[K]> : void {
+    const id = this._transport.reservateId();
+    const fullMethod = `${this._service}.${method as string}` as any;
+    const clientStream = new ClientStream<any, any, K>(this._transport, id, fullMethod);
+    const serverStream = new ServerStream<any, K>();
 
-      const dyplex = {
-        complete() {
-          return clientStream.complete();
-        },
-        send(data: any) {
-          return clientStream.send(data);
-        },
-        onMessage(callback: any) {
-          serverStream.onMessage(callback);
-        },
-        onError(callback: any) {
-          serverStream.onError(callback);
-        },
-        onEnd(callback: any) {
-          serverStream.onEnd(callback);
+    const duplex = {
+      complete() {
+        return clientStream.complete();
+      },
+      send(data: any) {
+        return clientStream.send(data);
+      },
+      onMessage(callback: any) {
+        serverStream.onMessage(callback);
+      },
+      onError(callback: any) {
+        serverStream.onError(callback);
+      },
+      onEnd(callback: any) {
+        serverStream.onEnd(callback);
+      }
+    } as ReturnType<S[K]> & void;
+
+    this._transport
+      .sendRequest<null | undefined, any, string>({ id, method: fullMethod, type: DataType.STREAM_DUPLEX }, options, (data) => {
+        if (data.type === DataType.STREAM_CLIENT) {
+          clientStream.next();
+          return;
         }
-      } as ReturnType<S[K]> & void;
+        if (data.type === DataType.STREAM_SERVER) return serverStream.InvokeMessage?.(data.response);
 
-      this._transport
-        .sendRequest<null | undefined, any, string>({ id, method: fullMethod, type: DataType.STREAM_DUPLEX }, options, (data) => {
-          if (data.type === DataType.STREAM_CLIENT) {
-            resolve(dyplex);
-            clientStream.next();
-            return;
-          }
-          if (data.type === DataType.STREAM_SERVER) return serverStream.InvokeMessage?.(data.response);
-          const e = new MethodError(Status.INTERNAL, "Internal server error");
-          clientStream.error(e);
-          serverStream.InvokeError?.(e);
-        })
-        .then((res) => {
-          const r = {
-            method: res.method as any,
-            response: res.response,
-            status: res.status!,
-            meta: res.meta
-          };
-          clientStream.result(r);
-          serverStream.InvokeEnd?.(r);
-        })
-        .catch((e) => {
-          clientStream.error(e);
-          serverStream.InvokeError?.(e);
-          reject(e);
-        });
-    }) as any;
+        const e = new MethodError(Status.INTERNAL, "Internal server error");
+        clientStream.error(e);
+        serverStream.InvokeError?.(e);
+      })
+      .then((res) => {
+        const r = {
+          method: res.method as any,
+          response: res.response,
+          status: res.status!,
+          meta: res.meta
+        };
+        clientStream.result(r);
+        serverStream.InvokeEnd?.(r);
+      })
+      .catch((e) => {
+        clientStream.error(e);
+        serverStream.InvokeError?.(e);
+      });
+    return duplex;
   }
 }
 

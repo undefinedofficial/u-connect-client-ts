@@ -142,18 +142,11 @@ const stream = shallowRef<IClientStream<string, string>>();
 const isOpenClientStream = ref(false);
 const isSendClientStream = ref(false);
 
-const sayHelloClientStream = async () => {
+const sayHelloClientStream = () => {
   sayAbortClientStream();
   abortClientStream = new AbortController();
   isOpenClientStream.value = true;
-  try {
-    stream.value = await helloService.clientStream("SayHelloClientStream", { abort: abortClientStream?.signal });
-  } catch (error) {
-    const { status, message } = error as MethodError;
-    console.log("client stream error", error);
-    isOpenClientStream.value = false;
-    clientStreamLog.value.push(`client stream open error status: ${status}, message: ${message}`);
-  }
+  stream.value = helloService.clientStream("SayHelloClientStream", { abort: abortClientStream?.signal });
 };
 
 const sayAbortClientStream = () => {
@@ -243,25 +236,19 @@ const sayHelloDuplexStream = async () => {
   sayAbortDuplexStream();
   abortDuplexStream = new AbortController();
   isOpenDuplexStream.value = true;
-  try {
-    const stream = await helloService.duplex("SayHelloDuplexStream", { abort: abortDuplexStream?.signal });
-    duplexStream.value = stream;
-    duplexStream.value.onMessage((data) => {
-      duplexStreamLog.value.push(`say duplex stream response: ${data}`);
-    });
-    duplexStream.value.onError((error) => {
-      const { status, message } = error as MethodError;
-      console.log(`say duplex stream error status: ${status}, message: ${message}`);
-      duplexStreamLog.value.push(`say duplex stream error: ${message}`);
-    });
-    duplexStream.value.onEnd((result) => {
-      duplexStreamLog.value.push(`say duplex stream end: - ${Status[result.status]}`);
-    });
-  } catch (error) {
+  const stream = helloService.duplex("SayHelloDuplexStream", { abort: abortDuplexStream?.signal });
+  duplexStream.value = stream;
+  duplexStream.value.onMessage((data) => {
+    duplexStreamLog.value.push(`say duplex stream response: ${data}`);
+  });
+  duplexStream.value.onError((error) => {
     const { status, message } = error as MethodError;
     console.log(`say duplex stream error status: ${status}, message: ${message}`);
-    duplexStreamLog.value.push(`say duplex stream open error: ${message}`);
-  }
+    duplexStreamLog.value.push(`say duplex stream error: ${message}`);
+  });
+  duplexStream.value.onEnd((result) => {
+    duplexStreamLog.value.push(`say duplex stream end: - ${Status[result.status]}`);
+  });
 };
 
 const sayAbortDuplexStream = () => {
