@@ -280,7 +280,7 @@ export class WebSocketTransport implements Transport {
       this._socket.onopen = () => {
         this.state = WebSocketTransportState.OPEN;
         this._attempts = 0;
-        if (this._options.debug) debugWrite("connected ");
+        if (this._options.debug) debugWrite("connected");
         resolve(this);
       };
 
@@ -293,7 +293,7 @@ export class WebSocketTransport implements Transport {
        */
       this._socket.onclose = async () => {
         await this.dispose();
-        await this.reconnect(this._attempts++);
+        await this.reconnect(this._attempts++).then(resolve);
       };
 
       /**
