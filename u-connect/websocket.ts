@@ -217,6 +217,14 @@ function debugWrite(message: any) {
   console.info("%c u-connect : ", "color: #42AAFF;", message);
 }
 
+function warnWrite(message: any) {
+  console.warn("%c u-connect : ", "color: #d8b104;", message);
+}
+
+function errorWrite(message: any, ...args: any[]) {
+  console.error("%c u-connect : ", "color: #ca0000;", message, ...args);
+}
+
 export class WebSocketTransport implements Transport {
   private readonly _options!: Required<Omit<WebSocketTransportOptions, "debug">> & Pick<WebSocketTransportOptions, "debug">;
 
@@ -478,17 +486,17 @@ export class WebSocketTransport implements Transport {
       }
 
       case DataType.CONNECT:
-        console.warn("type CONNECT in received");
+        warnWrite("type CONNECT in received");
         break;
       case DataType.DISCONNECT:
-        console.warn("type DISCONNECT in received");
+        warnWrite("type DISCONNECT in received");
         break;
       case DataType.UNARY_SERVER:
-        console.warn("type UNARY_SERVER in received");
+        warnWrite("type UNARY_SERVER in received");
         break;
 
       default:
-        console.error("Unknown message type:", message);
+        errorWrite("Unknown message type: ", message);
         break;
     }
   }
