@@ -1,16 +1,16 @@
 import { decode, encode } from "@msgpack/msgpack";
-import {
-  type Transport,
-  type TransportService,
-  type TranspontServicePath,
-  type TransportServiceOptions,
-  type TransportPackageClient,
-  type TransportPackageServer,
-  type UnaryResponse,
-  type IClientStream,
-  type IServerStream,
-  type IDuplexStream,
-  type TransportMethod
+import type {
+  Transport,
+  TransportService,
+  TranspontServicePath,
+  TransportServiceOptions,
+  TransportPackageClient,
+  TransportPackageServer,
+  UnaryResponse,
+  IClientStream,
+  IServerStream,
+  IDuplexStream,
+  TransportMethod
 } from "./transport";
 import { MethodError } from "./exceptions";
 import { Status } from "./status";
@@ -160,28 +160,11 @@ export enum WebSocketTransportState {
   RECONNECTING
 }
 
-export interface WebSocketSerializer {
-  /**
-   * encoder for sending messages
-   */
-  encoder: (message: any, ...args: any[]) => any;
-
-  /**
-   * decoder for receiving messages
-   */
-  decoder: (data: any) => any;
-}
-
 export interface WebSocketTransportOptions {
   /**
    * url for websocket connection to server
    */
   url: string;
-
-  /**
-   * serializer for sending and receiving messages
-   */
-  serializer?: WebSocketSerializer;
 
   /**
    * debug mode loging (default: false)
@@ -257,10 +240,6 @@ export class WebSocketTransport implements Transport {
   constructor(options: WebSocketTransportOptions) {
     this._options = {
       reconnectDelay: 1000,
-      serializer: {
-        encoder: encode,
-        decoder: decode
-      },
       ...options
     };
     this._state = WebSocketTransportState.CLOSED;
@@ -372,7 +351,7 @@ export class WebSocketTransport implements Transport {
    * @returns {any} - The serialized data.
    */
   private serialize<P>({ id, method, type, request }: TransportPackageClient<any, any, P>, options?: TransportServiceOptions): any {
-    return this._options.serializer.encoder([id, method, type, request || null, options?.meta || null]);
+    return encode([id, method, type, request || null, options?.meta || null]);
   }
 
   /**
@@ -382,7 +361,7 @@ export class WebSocketTransport implements Transport {
    * @return {TransportPackageServer<any, any, P>} - The deserialized TransportPackageServer object.
    */
   private deserialize<P>(message: any): TransportPackageServer<any, any, P> {
-    const [id, method, type, response, status, meta, error] = this._options.serializer.decoder(message);
+    const [id, method, type, response, status, meta, error] = decode(message) as any;
     return { id, method, type, status, response, meta, error };
   }
 
