@@ -1,16 +1,16 @@
 import { decode, encode } from "@msgpack/msgpack";
-import {
-  type Transport,
-  type TransportService,
-  type TranspontServicePath,
-  type TransportServiceOptions,
-  type TransportPackageClient,
-  type TransportPackageServer,
-  type UnaryResponse,
-  type IClientStream,
-  type IServerStream,
-  type IDuplexStream,
-  type TransportMethod
+import type {
+  Transport,
+  TransportService,
+  TranspontServicePath,
+  TransportServiceOptions,
+  TransportPackageClient,
+  TransportPackageServer,
+  UnaryResponse,
+  IClientStream,
+  IServerStream,
+  IDuplexStream,
+  TransportMethod
 } from "./transport";
 import { MethodError } from "./exceptions";
 import { Status } from "./status";
@@ -18,6 +18,7 @@ import { DataType } from "./DataType";
 import { ServerStream } from "./ServerStream";
 import { ClientStream } from "./ClientStream";
 import { EventEmitter } from "./emitter";
+import { PromiseValue } from "./PromiceValue";
 
 class WebSocketTransportService<S extends Record<string, any>> implements TransportService<S> {
   constructor(private _transport: WebSocketTransport, private _service: TranspontServicePath) {}
@@ -160,28 +161,11 @@ export enum WebSocketTransportState {
   RECONNECTING
 }
 
-export interface WebSocketSerializer {
-  /**
-   * encoder for sending messages
-   */
-  encoder: (message: any, ...args: any[]) => any;
-
-  /**
-   * decoder for receiving messages
-   */
-  decoder: (data: any) => any;
-}
-
 export interface WebSocketTransportOptions {
   /**
    * url for websocket connection to server
    */
   url: string;
-
-  /**
-   * serializer for sending and receiving messages
-   */
-  serializer?: WebSocketSerializer;
 
   /**
    * debug mode loging (default: false)
@@ -236,14 +220,16 @@ export class WebSocketTransport implements Transport {
   /** The number of reconnect attempts */
   private _attempts = 0;
 
+  private _reconnectPromises: PromiseValue<Transport>[];
+
   /** The id of the last task */
-  private _id!: number;
+  private _id: number;
 
   /** Map of tasks by id */
-  private _tasks!: Map<number, ITransportTask<any>>;
+  private _tasks: Map<number, ITransportTask<any>>;
 
   /** Current state of the connection */
-  private _state!: WebSocketTransportState;
+  private _state: WebSocketTransportState;
   public get state(): WebSocketTransportState {
     return this._state;
   }
@@ -257,58 +243,29 @@ export class WebSocketTransport implements Transport {
   constructor(options: WebSocketTransportOptions) {
     this._options = {
       reconnectDelay: 1000,
-      serializer: {
-        encoder: encode,
-        decoder: decode
-      },
       ...options
     };
-    this._state = WebSocketTransportState.CLOSED;
     this._emitter = new EventEmitter();
+    this._attempts = 0;
+    this._reconnectPromises = [];
+    this._id = 0;
+    this._tasks = new Map();
+    this._state = WebSocketTransportState.CLOSED;
   }
   /**
    * Asynchronously establishes a WebSocket connection and returns a Promise that resolves to the Transport instance.
    * @return {Promise<Transport>} A Promise that resolves to the Transport instance when the connection is established.
    */
   async connect(): Promise<Transport> {
-    return new Promise((resolve) => {
-      if (this.state === WebSocketTransportState.OPEN || this.state === WebSocketTransportState.CONNECTING) return resolve(this);
+    if (this.state === WebSocketTransportState.OPEN) return this;
 
-      if (this.state === WebSocketTransportState.CLOSED) this.state = WebSocketTransportState.CONNECTING;
+    this.state = WebSocketTransportState.CONNECTING;
 
-      this._id = 0;
-      this._tasks = new Map();
+    const reconnectPromise = new PromiseValue<Transport>();
+    this._reconnectPromises.push(reconnectPromise);
 
-      this._socket = new WebSocket(this._options.url, "u-connect-web");
-      this._socket.binaryType = "arraybuffer";
-
-      /**
-       * Set up a callback for when the WebSocket connection is opened.
-       */
-      this._socket.onopen = () => {
-        this.state = WebSocketTransportState.OPEN;
-        this._attempts = 0;
-        if (this._options.debug) debugWrite("connected");
-        resolve(this);
-      };
-
-      this._socket.onerror = (e) => {
-        if (this._options.debug) debugWrite(e);
-      };
-
-      /**
-       * Set up a callback for when the WebSocket connection is closed.
-       */
-      this._socket.onclose = async () => {
-        await this.dispose();
-        await this.reconnect(this._attempts++).then(resolve);
-      };
-
-      /**
-       * Set up a callback for when a message is received from the server.
-       */
-      this._socket.onmessage = (e) => this.onMessage(this.deserialize(e.data));
-    });
+    this.createSocket();
+    return reconnectPromise.value();
   }
 
   /**
@@ -319,7 +276,8 @@ export class WebSocketTransport implements Transport {
     if (this.state === WebSocketTransportState.CLOSED) return;
 
     if (this._options.debug) debugWrite("disconnect");
-    await this.dispose();
+    this.dispose();
+    return Promise.resolve();
   }
 
   /**
@@ -332,20 +290,65 @@ export class WebSocketTransport implements Transport {
   }
 
   /**
-   * Reconnects the WebSocketTransport if it is in the CLOSED state.
+   * Reconnects the WebSocketTransport if it is disconnected state.
    * @param {number} attempt - The number of reconnect attempts made so far. Defaults to 0.
-   * @return {Promise<Transport>} A Promise that resolves to the Transport instance when the reconnection is successful.
+   * @return {Promise<void>} A Promise that resolves once the WebSocketTransport is reconnected.
    */
-  private async reconnect(attempt: number = 0): Promise<Transport> {
-    if (this.state !== WebSocketTransportState.CLOSED) return this;
+  private async reconnect(attempt: number = 0): Promise<void> {
+    if (this.state === WebSocketTransportState.OPEN) {
+      this._id = 0;
+      this._tasks.forEach((task) => task.onError(new Error("Transport closed")));
+      this._tasks.clear();
 
-    this.state = WebSocketTransportState.RECONNECTING;
+      this.state = WebSocketTransportState.RECONNECTING;
+    }
+
     const delay = typeof this._options.reconnectDelay === "function" ? this._options.reconnectDelay(attempt) : this._options.reconnectDelay;
-    if (delay === false) return this;
+    if (delay === false) return;
 
     await new Promise((resolve) => setTimeout(resolve, delay));
+
     if (this._options.debug) debugWrite("connecting attempt №" + attempt);
-    return this.connect();
+    this.createSocket();
+  }
+
+  /**
+   * Creates the WebSocket instance.
+   * @returns true if the socket new created else false the socket already exists or created.
+   */
+  private createSocket() {
+    if (this._socket?.readyState !== WebSocket.CONNECTING && this._socket?.readyState !== WebSocket.OPEN) {
+      this._socket = new WebSocket(this._options.url, "u-connect-web");
+      this._socket.binaryType = "arraybuffer";
+
+      /**
+       * Set up a callback for when the WebSocket connection is opened.
+       */
+      this._socket.onopen = () => {
+        this.state = WebSocketTransportState.OPEN;
+        this._attempts = 0;
+        this._reconnectPromises.forEach((p) => p.resolve(this));
+        this._reconnectPromises = [];
+        if (this._options.debug) debugWrite("connected");
+      };
+
+      this._socket.onerror = (e) => {
+        if (this._options.debug) debugWrite(e);
+      };
+
+      /**
+       * Set up a callback for when the WebSocket connection is closed.
+       */
+      this._socket.onclose = () => this.reconnect(this._attempts++);
+
+      /**
+       * Set up a callback for when a message is received from the server.
+       */
+      this._socket.onmessage = (e) => this.onMessage(this.deserialize(e.data));
+
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -353,13 +356,17 @@ export class WebSocketTransport implements Transport {
    *
    * @return {Promise<void>} A Promise that resolves once the disposal is complete.
    */
-  private async dispose(): Promise<void> {
+  private dispose(): void {
     if (this.state === WebSocketTransportState.CLOSED) return;
 
+    this._id = 0;
     this.state = WebSocketTransportState.CLOSED;
 
     this._tasks.forEach((stream) => stream.onError(new Error("Transport closed")));
     this._tasks.clear();
+
+    this._reconnectPromises.forEach((p) => p.reject(new Error("Transport closed")));
+    this._reconnectPromises = [];
 
     this._socket?.close();
   }
@@ -372,7 +379,7 @@ export class WebSocketTransport implements Transport {
    * @returns {any} - The serialized data.
    */
   private serialize<P>({ id, method, type, request }: TransportPackageClient<any, any, P>, options?: TransportServiceOptions): any {
-    return this._options.serializer.encoder([id, method, type, request || null, options?.meta || null]);
+    return encode([id, method, type, request || null, options?.meta || null]);
   }
 
   /**
@@ -382,7 +389,7 @@ export class WebSocketTransport implements Transport {
    * @return {TransportPackageServer<any, any, P>} - The deserialized TransportPackageServer object.
    */
   private deserialize<P>(message: any): TransportPackageServer<any, any, P> {
-    const [id, method, type, response, status, meta, error] = this._options.serializer.decoder(message);
+    const [id, method, type, response, status, meta, error] = decode(message) as any;
     return { id, method, type, status, response, meta, error };
   }
 
@@ -399,7 +406,7 @@ export class WebSocketTransport implements Transport {
     /**
      * If the transport is not open, open it and wait for it to be opened.
      */
-    if (this.state === WebSocketTransportState.CLOSED) await this.connect();
+    if (this.state !== WebSocketTransportState.OPEN) await this.connect();
 
     /**
      * Add the message to the queue tasks and wait for the response

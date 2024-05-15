@@ -88,17 +88,6 @@ interface HelloService {
 const transport = new WebSocketTransport({
   url: `ws://${window.location.host}/api/ws`,
   debug: true,
-  // serializer: {
-  //   decoder(data) {
-  //     const p = decode(data);
-  //     console.log("response", p);
-  //     return p;
-  //   },
-  //   encoder(message) {
-  //     console.log("request", message);
-  //     return encode(message);
-  //   }
-  // },
   reconnectDelay(reconnects) {
     console.log(`reconnecting ${reconnects}`);
     return 1000 * reconnects;
@@ -159,8 +148,8 @@ const saySendClientStream = async (message: string) => {
   if (isSendClientStream.value) return;
   try {
     isSendClientStream.value = true;
-    await stream.value?.send(message);
     clientStreamLog.value.push(`say client stream send: ${message}`);
+    await stream.value?.send(message);
   } catch (error) {
     const { status, message } = error as MethodError;
 
@@ -261,8 +250,8 @@ const saySendDuplexStream = async (message: string) => {
   if (isSendDuplexStream.value) return;
   try {
     isSendDuplexStream.value = true;
-    await duplexStream.value?.send(message);
     duplexStreamLog.value.push(`say duplex stream send: ${message}`);
+    await duplexStream.value?.send(message);
   } catch (error) {
     const { status, message } = error as MethodError;
 
