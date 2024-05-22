@@ -362,10 +362,10 @@ export class WebSocketTransport implements Transport {
     this._id = 0;
     this.state = WebSocketTransportState.CLOSED;
 
-    this._tasks.forEach((stream) => stream.onError(new Error("Transport closed")));
+    this._tasks.forEach((stream) => stream.onError(new MethodError(Status.UNAVAILABLE, "Transport closed")));
     this._tasks.clear();
 
-    this._reconnectPromises.forEach((p) => p.reject(new Error("Transport closed")));
+    this._reconnectPromises.forEach((p) => p.reject(new MethodError(Status.UNAVAILABLE, "Transport closed")));
     this._reconnectPromises = [];
 
     this._socket?.close();
