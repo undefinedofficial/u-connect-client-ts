@@ -297,7 +297,7 @@ export class WebSocketTransport implements Transport {
   private async reconnect(attempt: number = 0): Promise<void> {
     if (this.state === WebSocketTransportState.OPEN) {
       this._id = 0;
-      this._tasks.forEach((task) => task.onError(new Error("Transport closed")));
+      this._tasks.forEach((task) => task.onError(new MethodError(Status.UNAVAILABLE, "Transport closed")));
       this._tasks.clear();
 
       this.state = WebSocketTransportState.RECONNECTING;
