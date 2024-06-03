@@ -1,3 +1,11 @@
+/**
+ * @u-connect/client-ts v2.0.0
+ * https://github.com/undefinedofficial/u-connect-client-ts.git
+ *
+ * Copyright (c) 2024 https://github.com/undefinedofficial
+ * Released under the MIT license
+ */
+
 export class EventEmitter<M extends Record<string | symbol | number, any>> {
   private _listeners: Map<keyof M, Array<(data: any) => void>> = new Map();
   public on<K extends keyof M>(event: K, listener: (data: M[K]) => void): void {

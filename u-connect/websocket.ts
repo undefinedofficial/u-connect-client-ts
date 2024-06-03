@@ -1,188 +1,24 @@
+/**
+ * @u-connect/client-ts v2.0.0
+ * https://github.com/undefinedofficial/u-connect-client-ts.git
+ *
+ * Copyright (c) 2024 https://github.com/undefinedofficial
+ * Released under the MIT license
+ */
+
 import { decode, encode } from "@msgpack/msgpack";
-import type {
-  Transport,
-  TransportService,
-  TranspontServicePath,
-  TransportServiceOptions,
-  TransportPackageClient,
-  TransportPackageServer,
-  UnaryResponse,
-  IClientStream,
-  IServerStream,
-  IDuplexStream,
-  TransportMethod
-} from "./transport";
+import type { PackageClient, PackageServer, ServicePath } from "./DataType";
+import { ClientService, type IService, type ServiceMethodOptions } from "./service";
 import { MethodError } from "./exceptions";
 import { Status } from "./status";
 import { DataType } from "./DataType";
-import { ServerStream } from "./ServerStream";
-import { ClientStream } from "./ClientStream";
-import { EventEmitter } from "./emitter";
-import { PromiseValue } from "./PromiceValue";
+import { EventEmitter, PromiseValue } from "./utils/index";
 
-class WebSocketTransportService<S extends Record<string, any>> implements TransportService<S> {
-  constructor(private _transport: WebSocketTransport, private _service: TranspontServicePath) {}
-
-  unary<K extends keyof S>(
-    method: K,
-    request: Parameters<S[K]>[0],
-    options?: TransportServiceOptions
-  ): ReturnType<S[K]> extends UnaryResponse<any> ? Promise<ReturnType<S[K]>> : void {
-    return this._transport
-      .sendRequest<Parameters<S[K]>[0], UnaryResponse<any>, string>(
-        { id: this._transport.reservateId(), method: `${this._service}.${method as string}`, type: DataType.UNARY_CLIENT, request },
-        options
-      )
-      .then((res) => ({
-        method: res.method,
-        response: res.response!,
-        status: res.status!,
-        meta: res.meta
-      })) as any;
-  }
-
-  clientStream<K extends keyof S>(
-    method: K,
-    options?: TransportServiceOptions
-  ): ReturnType<S[K]> extends IClientStream<any, any, any> ? ReturnType<S[K]> : void {
-    const id = this._transport.reservateId();
-    const fullMethod = `${this._service}.${method as string}` as TransportMethod<string, string>;
-    const clientStream = new ClientStream<any, any, string>(this._transport, id, fullMethod);
-
-    this._transport
-      .sendRequest<null | undefined, any, string>(
-        { id, method: `${this._service}.${method as string}`, type: DataType.STREAM_CLIENT, request: null },
-        options,
-        (data) => {
-          if (data.type === DataType.STREAM_CLIENT) {
-            clientStream.next();
-            return;
-          }
-          clientStream.error(new MethodError(Status.INTERNAL, "Internal server error"));
-        }
-      )
-      .then((res) =>
-        clientStream.result({
-          method: res.method,
-          response: res.response!,
-          status: res.status!,
-          meta: res.meta
-        })
-      )
-      .catch((e) => clientStream.error(e));
-    return clientStream as any;
-  }
-
-  serverStream<K extends keyof S>(
-    method: K,
-    request: Parameters<S[K]>[0],
-    options?: TransportServiceOptions
-  ): ReturnType<S[K]> extends IServerStream<any, any> ? ReturnType<S[K]> : void {
-    const stream = new ServerStream();
-
-    this._transport
-      .sendRequest<Parameters<S[K]>[0], null | undefined, string>(
-        { id: this._transport.reservateId(), type: DataType.STREAM_SERVER, method: `${this._service}.${method as string}`, request },
-        options,
-        (data) => {
-          if (data.type === DataType.STREAM_SERVER) return stream.InvokeMessage?.(data.response);
-          stream.InvokeError?.(new MethodError(Status.INTERNAL, "Internal server error"));
-        }
-      )
-      .then((response) => stream.InvokeEnd?.(response as any))
-      .catch((error) => stream.InvokeError?.(error));
-    return stream as any;
-  }
-
-  duplex<K extends keyof S>(
-    method: K,
-    options?: TransportServiceOptions
-  ): ReturnType<S[K]> extends IDuplexStream<any, any> ? ReturnType<S[K]> : void {
-    const id = this._transport.reservateId();
-    const fullMethod = `${this._service}.${method as string}` as any;
-    const clientStream = new ClientStream<any, any, K>(this._transport, id, fullMethod);
-    const serverStream = new ServerStream<any, K>();
-
-    const duplex = {
-      complete() {
-        return clientStream.complete();
-      },
-      send(data: any) {
-        return clientStream.send(data);
-      },
-      onMessage(callback: any) {
-        serverStream.onMessage(callback);
-      },
-      onError(callback: any) {
-        serverStream.onError(callback);
-      },
-      onEnd(callback: any) {
-        serverStream.onEnd(callback);
-      }
-    } as ReturnType<S[K]> & void;
-
-    this._transport
-      .sendRequest<null | undefined, any, string>({ id, method: fullMethod, type: DataType.STREAM_DUPLEX }, options, (data) => {
-        if (data.type === DataType.STREAM_CLIENT) {
-          clientStream.next();
-          return;
-        }
-        if (data.type === DataType.STREAM_SERVER) return serverStream.InvokeMessage?.(data.response);
-
-        const e = new MethodError(Status.INTERNAL, "Internal server error");
-        clientStream.error(e);
-        serverStream.InvokeError?.(e);
-      })
-      .then((res) => {
-        const r = {
-          method: res.method as any,
-          response: res.response,
-          status: res.status!,
-          meta: res.meta
-        };
-        clientStream.result(r);
-        serverStream.InvokeEnd?.(r);
-      })
-      .catch((e) => {
-        clientStream.error(e);
-        serverStream.InvokeError?.(e);
-      });
-    return duplex;
-  }
-}
-
-/**
- * WebSocketTransport connection state
- */
-export enum WebSocketTransportState {
-  CLOSED = 0,
-  CONNECTING,
-  OPEN,
-  RECONNECTING
-}
-
-export interface WebSocketTransportOptions {
-  /**
-   * url for websocket connection to server
-   */
-  url: string;
-
-  /**
-   * debug mode loging (default: false)
-   */
-  debug?: boolean;
-
-  /**
-   * reconnect delay in ms (default: 1000) or false to disable
-   */
-  reconnectDelay?: number | ((reconnects: number) => number) | false;
-}
-
-interface ITransportTask<T> {
+interface ITask<T> {
   /**
    * Callback for when a message is received from the server.
    */
-  onMessage?: (data: TransportPackageServer<any, string, T>) => void;
+  onMessage?: (data: PackageServer<any, string, T>) => void;
   /**
    * Callback for when the server ends the task.
    */
@@ -193,8 +29,21 @@ interface ITransportTask<T> {
   onError: (error: Error) => void;
 }
 
-interface WebSocketTransportEvents {
-  status: WebSocketTransportState;
+interface UConnectClientEventMap {
+  status: TransportState;
+}
+
+export interface IClient {
+  readonly readyState: number;
+  binaryType: "arraybuffer" | string;
+  addEventListener(event: "open", listener: () => void): void;
+  addEventListener(event: "close", listener: (e: { code: number; reason: string }) => void): void;
+  addEventListener(event: "error", listener: (e: Error) => void): void;
+  addEventListener(event: "message", listener: (message: { data: string }) => void): void;
+  send(message: string): void;
+  close(): void;
+
+  new (url: string | URL, protocol: string): IClient;
 }
 
 function debugWrite(message: any) {
@@ -209,40 +58,83 @@ function errorWrite(message: any, ...args: any[]) {
   console.error("%c u-connect : ", "color: #ca0000;", message, ...args);
 }
 
-export class WebSocketTransport implements Transport {
-  private readonly _options!: Required<Omit<WebSocketTransportOptions, "debug">> & Pick<WebSocketTransportOptions, "debug">;
+/**
+ * WebSocketTransport connection state
+ */
+export enum TransportState {
+  CLOSED = 0,
+  CONNECTING,
+  OPEN,
+  RECONNECTING
+}
 
-  private readonly _emitter: EventEmitter<WebSocketTransportEvents>;
+export interface UConnectClientOptions {
+  /**
+   * url for websocket connection to server
+   */
+  url: string | URL;
+
+  /**
+   * debug mode loging (default: false)
+   */
+  debug?: boolean;
+
+  /**
+   * reconnect delay in ms (default: 1000) or false to disable
+   */
+  reconnectDelay?: number | ((reconnects: number) => number) | false;
+
+  /**
+   * custom client for websocket connection (default: WebSocket browser API)
+   */
+  client?: IClient;
+}
+
+export interface IUConnectClient {
+  connect(): Promise<IUConnectClient>;
+  disconnect(): Promise<void>;
+
+  service<S extends Record<string, any>>(id: ServicePath): IService<S>;
+}
+
+export class UConnectClient implements IUConnectClient {
+  private readonly _options!: Required<Omit<UConnectClientOptions, "debug">> & Pick<UConnectClientOptions, "debug">;
+
+  private readonly _emitter: EventEmitter<UConnectClientEventMap>;
 
   /** The websocket instance */
-  private _socket!: WebSocket;
+  private _socket!: IClient;
 
   /** The number of reconnect attempts */
   private _attempts = 0;
 
-  private _reconnectPromises: PromiseValue<Transport>[];
+  private _reconnectPromises: PromiseValue<IUConnectClient>[];
 
   /** The id of the last task */
   private _id: number;
 
   /** Map of tasks by id */
-  private _tasks: Map<number, ITransportTask<any>>;
+  private _tasks: Map<number, ITask<any>>;
 
   /** Current state of the connection */
-  private _state: WebSocketTransportState;
-  public get state(): WebSocketTransportState {
+  private _state: TransportState;
+  public get state(): TransportState {
     return this._state;
   }
-  private set state(state: WebSocketTransportState) {
-    if (this._options.debug) debugWrite(`state change from ${WebSocketTransportState[this._state]} to ${WebSocketTransportState[state]}`);
+  private set state(state: TransportState) {
+    if (this._options.debug) debugWrite(`state change from ${TransportState[this._state]} to ${TransportState[state]}`);
 
     this._state = state;
     this._emitter.emit("status", state);
   }
 
-  constructor(options: WebSocketTransportOptions) {
+  constructor(options: UConnectClientOptions) {
+    if (typeof WebSocket === "undefined" && options.client === undefined)
+      throw new Error("WebSocket API is not supported in this environment or no client was provided.");
+
     this._options = {
       reconnectDelay: 1000,
+      client: options.client || (WebSocket as unknown as IClient),
       ...options
     };
     this._emitter = new EventEmitter();
@@ -250,18 +142,18 @@ export class WebSocketTransport implements Transport {
     this._reconnectPromises = [];
     this._id = 0;
     this._tasks = new Map();
-    this._state = WebSocketTransportState.CLOSED;
+    this._state = TransportState.CLOSED;
   }
   /**
    * Asynchronously establishes a WebSocket connection and returns a Promise that resolves to the Transport instance.
    * @return {Promise<Transport>} A Promise that resolves to the Transport instance when the connection is established.
    */
-  async connect(): Promise<Transport> {
-    if (this.state === WebSocketTransportState.OPEN) return this;
+  async connect(): Promise<IUConnectClient> {
+    if (this.state === TransportState.OPEN) return this;
 
-    this.state = WebSocketTransportState.CONNECTING;
+    this.state = TransportState.CONNECTING;
 
-    const reconnectPromise = new PromiseValue<Transport>();
+    const reconnectPromise = new PromiseValue<IUConnectClient>();
     this._reconnectPromises.push(reconnectPromise);
 
     this.createSocket();
@@ -273,7 +165,7 @@ export class WebSocketTransport implements Transport {
    * @return {Promise<void>} A Promise that resolves once the WebSocketTransport is disconnected.
    */
   async disconnect(): Promise<void> {
-    if (this.state === WebSocketTransportState.CLOSED) return;
+    if (this.state === TransportState.CLOSED) return;
 
     if (this._options.debug) debugWrite("disconnect");
     this.dispose();
@@ -282,11 +174,11 @@ export class WebSocketTransport implements Transport {
 
   /**
    * Creates a local namespace with the given service ID and returns remote methods for calling.
-   * @param {TranspontServicePath} id - The ID of the service.
-   * @return {TransportService<S>} A new TransportService instance.
+   * @param {ServicePath} id - The ID of the service.
+   * @return {IService<S>} A new TransportService instance.
    */
-  service<S extends Record<string, any>>(id: TranspontServicePath): TransportService<S> {
-    return new WebSocketTransportService<S>(this, id);
+  service<S extends Record<string, any>>(id: ServicePath): IService<S> {
+    return new ClientService<S>(this, id);
   }
 
   /**
@@ -295,12 +187,12 @@ export class WebSocketTransport implements Transport {
    * @return {Promise<void>} A Promise that resolves once the WebSocketTransport is reconnected.
    */
   private async reconnect(attempt: number = 0): Promise<void> {
-    if (this.state === WebSocketTransportState.OPEN) {
+    if (this.state === TransportState.OPEN) {
       this._id = 0;
       this._tasks.forEach((task) => task.onError(new MethodError(Status.UNAVAILABLE, "Transport closed")));
       this._tasks.clear();
 
-      this.state = WebSocketTransportState.RECONNECTING;
+      this.state = TransportState.RECONNECTING;
     }
 
     const delay = typeof this._options.reconnectDelay === "function" ? this._options.reconnectDelay(attempt) : this._options.reconnectDelay;
@@ -317,34 +209,40 @@ export class WebSocketTransport implements Transport {
    * @returns true if the socket new created else false the socket already exists or created.
    */
   private createSocket() {
-    if (this._socket?.readyState !== WebSocket.CONNECTING && this._socket?.readyState !== WebSocket.OPEN) {
-      this._socket = new WebSocket(this._options.url, "u-connect-web");
+    if (this._socket?.readyState !== 0 && this._socket?.readyState !== 1) {
+      this._socket = new this._options.client(this._options.url, "u-connect-web");
       this._socket.binaryType = "arraybuffer";
 
       /**
        * Set up a callback for when the WebSocket connection is opened.
        */
-      this._socket.onopen = () => {
-        this.state = WebSocketTransportState.OPEN;
+      this._socket.addEventListener("open", () => {
+        this.state = TransportState.OPEN;
         this._attempts = 0;
         this._reconnectPromises.forEach((p) => p.resolve(this));
         this._reconnectPromises = [];
         if (this._options.debug) debugWrite("connected");
-      };
+      });
 
-      this._socket.onerror = (e) => {
+      this._socket.addEventListener("error", (e) => {
         if (this._options.debug) debugWrite(e);
-      };
+      });
 
       /**
        * Set up a callback for when the WebSocket connection is closed.
        */
-      this._socket.onclose = () => this.reconnect(this._attempts++);
+      this._socket.addEventListener("close", (e) => {
+        /**
+         * If the state is CLOSED client will not attempt to reconnect (set the state to CLOSE can be called from dispose method).
+         */
+        if (this._state === TransportState.CLOSED) return;
+        this.reconnect(this._attempts++);
+      });
 
       /**
        * Set up a callback for when a message is received from the server.
        */
-      this._socket.onmessage = (e) => this.onMessage(this.deserialize(e.data));
+      this._socket.addEventListener("message", (e) => this.onMessage(this.deserialize(e.data)));
 
       return true;
     }
@@ -357,10 +255,10 @@ export class WebSocketTransport implements Transport {
    * @return {Promise<void>} A Promise that resolves once the disposal is complete.
    */
   private dispose(): void {
-    if (this.state === WebSocketTransportState.CLOSED) return;
+    if (this.state === TransportState.CLOSED) return;
 
     this._id = 0;
-    this.state = WebSocketTransportState.CLOSED;
+    this.state = TransportState.CLOSED;
 
     this._tasks.forEach((stream) => stream.onError(new MethodError(Status.UNAVAILABLE, "Transport closed")));
     this._tasks.clear();
@@ -372,13 +270,23 @@ export class WebSocketTransport implements Transport {
   }
 
   /**
+   * Serializes and sends a message over the WebSocket connection.
+   * @param {PackageClient<string, string, I>} message - The message to send.
+   * @param {ServiceMethodOptions} [options] - The options for the message.
+   */
+  send<I>(message: PackageClient<string, string, I>, options?: ServiceMethodOptions) {
+    if (this._options.debug) debugWrite("send data " + message.method);
+    this._socket.send(this.serialize(message as PackageClient<any, string, I>, options));
+  }
+
+  /**
    * The last step in serializes a TransportPackageClient object and returns the serialized data.
    *
-   * @param {TransportPackageClient<any, any, P>} options - The TransportPackageClient object to serialize.
+   * @param {PackageClient<any, any, P>} options - The TransportPackageClient object to serialize.
    * @param {TransportServiceOptions} [options] - The options for the message.
    * @returns {any} - The serialized data.
    */
-  private serialize<P>({ id, method, type, request }: TransportPackageClient<any, any, P>, options?: TransportServiceOptions): any {
+  private serialize<P>({ id, method, type, request }: PackageClient<any, any, P>, options?: ServiceMethodOptions): any {
     return encode([id, method, type, request || null, options?.meta || null]);
   }
 
@@ -386,9 +294,9 @@ export class WebSocketTransport implements Transport {
    * The first step in deserializes a message received over connection and returns a TransportPackageServer object.
    *
    * @param {any} message - The message to be deserialized.
-   * @return {TransportPackageServer<any, any, P>} - The deserialized TransportPackageServer object.
+   * @return {PackageServer<any, any, P>} - The deserialized TransportPackageServer object.
    */
-  private deserialize<P>(message: any): TransportPackageServer<any, any, P> {
+  private deserialize<P>(message: any): PackageServer<any, any, P> {
     const [id, method, type, response, status, meta, error] = decode(message) as any;
     return { id, method, type, status, response, meta, error };
   }
@@ -399,22 +307,22 @@ export class WebSocketTransport implements Transport {
    * @param options The options for the message.
    */
   async sendRequest<I, O, M extends keyof Record<string, any>>(
-    message: TransportPackageClient<any, string, I>,
-    options?: TransportServiceOptions,
-    onMessage?: (data: TransportPackageServer<TranspontServicePath, string, O>) => void
-  ): Promise<TransportPackageServer<TranspontServicePath, M, O>> {
+    message: PackageClient<any, string, I>,
+    options?: ServiceMethodOptions,
+    onMessage?: (data: PackageServer<ServicePath, string, O>) => void
+  ): Promise<PackageServer<ServicePath, M, O>> {
     /**
      * If the transport is not open, open it and wait for it to be opened.
      */
-    if (this.state !== WebSocketTransportState.OPEN) await this.connect();
+    if (this.state !== TransportState.OPEN) await this.connect();
 
     /**
      * Add the message to the queue tasks and wait for the response
      */
-    return new Promise<TransportPackageServer<TranspontServicePath, M, O>>((onEnd, onError) => {
+    return new Promise<PackageServer<ServicePath, M, O>>((onEnd, onError) => {
       this._tasks.set(message.id, { onMessage, onEnd, onError });
 
-      this.send(message as TransportPackageClient<any, string, I>, options);
+      this.send(message as PackageClient<any, string, I>, options);
 
       if (options?.abort || options?.timeout) {
         const abort = (e: MethodError) => {
@@ -438,21 +346,11 @@ export class WebSocketTransport implements Transport {
   }
 
   /**
-   * Serializes and sends a message over the WebSocket connection.
-   * @param {TransportPackageClient<string, string, I>} message - The message to send.
-   * @param {TransportServiceOptions} [options] - The options for the message.
-   */
-  send<I>(message: TransportPackageClient<string, string, I>, options?: TransportServiceOptions) {
-    if (this._options.debug) debugWrite("send data " + message.method);
-    this._socket.send(this.serialize(message as TransportPackageClient<any, string, I>, options));
-  }
-
-  /**
    * Handles incoming messages from the WebSocket server.
-   * @param {TransportPackageServer<any, string, any>} message - The message received from the server.
+   * @param {PackageServer<any, string, any>} message - The message received from the server.
    * @return {Promise<void>} A promise that resolves when the message is handled.
    */
-  private async onMessage(message: TransportPackageServer<any, string, any>): Promise<void> {
+  private async onMessage(message: PackageServer<any, string, any>): Promise<void> {
     const task = this._tasks.get(message.id);
     switch (message.type) {
       case DataType.UNARY_CLIENT: {
@@ -508,15 +406,15 @@ export class WebSocketTransport implements Transport {
     }
   }
 
-  public on<K extends keyof WebSocketTransportEvents>(event: K, callback: (arg: WebSocketTransportEvents[K]) => any) {
+  public on<K extends keyof UConnectClientEventMap>(event: K, callback: (arg: UConnectClientEventMap[K]) => any) {
     return this._emitter.on(event, callback);
   }
 
-  public off<K extends keyof WebSocketTransportEvents>(event: K, callback: (arg: WebSocketTransportEvents[K]) => any) {
+  public off<K extends keyof UConnectClientEventMap>(event: K, callback: (arg: UConnectClientEventMap[K]) => any) {
     return this._emitter.off(event, callback);
   }
 
-  public once<K extends keyof WebSocketTransportEvents>(event: K, callback: (arg: WebSocketTransportEvents[K]) => any) {
+  public once<K extends keyof UConnectClientEventMap>(event: K, callback: (arg: UConnectClientEventMap[K]) => any) {
     return this._emitter.once(event, callback);
   }
 }

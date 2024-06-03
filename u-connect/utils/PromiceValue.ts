@@ -1,4 +1,12 @@
 /**
+ * @u-connect/client-ts v2.0.0
+ * https://github.com/undefinedofficial/u-connect-client-ts.git
+ *
+ * Copyright (c) 2024 https://github.com/undefinedofficial
+ * Released under the MIT license
+ */
+
+/**
  * PromiseValue is a helper class that can be used to create a promise that returns the value or error of a promise and save the value or error.
  */
 export class PromiseValue<T> {
