@@ -1,8 +1,16 @@
-import type { IServerStream, TransportResponse } from "./transport";
+/**
+ * @u-connect/client-ts v2.0.0
+ * https://github.com/undefinedofficial/u-connect-client-ts.git
+ *
+ * Copyright (c) 2024 https://github.com/undefinedofficial
+ * Released under the MIT license
+ */
+
+import type { IServerStream, ServerResponse } from "./DataType";
 
 export class ServerStream<T = any, M = string> implements IServerStream<T, M> {
   private isOpen = true;
-  public InvokeEnd?: (result: TransportResponse<null | undefined, M>) => void;
+  public InvokeEnd?: (result: ServerResponse<null | undefined, M>) => void;
   public InvokeMessage?: (data: T) => void;
   public InvokeError?: (error: Error) => void;
 
@@ -13,7 +21,7 @@ export class ServerStream<T = any, M = string> implements IServerStream<T, M> {
   onMessage(callback: (data: T) => void) {
     this.InvokeMessage = callback;
   }
-  onEnd(callback: (result: TransportResponse<null | undefined, M>) => void) {
+  onEnd(callback: (result: ServerResponse<null | undefined, M>) => void) {
     this.InvokeEnd = callback;
   }
 

@@ -58,23 +58,15 @@
 import { ref, shallowRef } from "vue";
 import { tryOnMounted } from "@vueuse/core";
 
-import {
-  WebSocketTransport,
-  WebSocketTransportState,
-  MethodError,
-  Status,
-  type IClientStream,
-  type IServerStream,
-  type IDuplexStream,
-  type UnaryResponse
-} from "../u-connect";
+import { MethodError, Status, TransportState } from "../u-connect";
 // import { decode, encode } from "@msgpack/msgpack";
 import USection from "./components/uSection.vue";
 import UFormUnary from "./components/uFormUnary.vue";
 import UFormStream from "./components/uFormStream.vue";
 import UList from "./components/uList.vue";
+import { UConnectClient, type IClientStream, type IDuplexStream, type IServerStream, type UnaryResponse } from "../u-connect";
 
-const status = ref(WebSocketTransportState[WebSocketTransportState.CLOSED]);
+const status = ref(TransportState[TransportState.CLOSED]);
 
 /**
  * HelloService interface definition for remote call.
@@ -85,7 +77,7 @@ interface HelloService {
   SayHelloServerStream(name: string): IServerStream<string, "SayHelloServerStream">;
   SayHelloDuplexStream(): IDuplexStream<string, string, "SayHelloDuplexStream">;
 }
-const transport = new WebSocketTransport({
+const transport = new UConnectClient({
   url: `ws://${window.location.host}/api/ws`,
   debug: true,
   reconnectDelay(reconnects) {
@@ -95,7 +87,7 @@ const transport = new WebSocketTransport({
 });
 
 transport.on("status", (s) => {
-  status.value = WebSocketTransportState[s];
+  status.value = TransportState[s];
 });
 
 const helloService = transport.service<HelloService>("HelloService");

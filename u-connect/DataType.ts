@@ -1,3 +1,11 @@
+/**
+ * @u-connect/client-ts v2.0.0
+ * https://github.com/undefinedofficial/u-connect-client-ts.git
+ *
+ * Copyright (c) 2024 https://github.com/undefinedofficial
+ * Released under the MIT license
+ */
+
 export const enum DataType {
   /** Received */
   CONNECT = 1,
@@ -36,4 +44,77 @@ export const enum DataType {
    * Abort any pending request or stream.
    */
   ABORT = 9
+}
+
+import type { Status } from "./status";
+
+export type RequestMeta<T = Record<string, string>> = T;
+
+export type ResponseMeta<T = Record<string, string>> = Readonly<T>;
+
+export type TransportData<T> = T | Record<string, any>;
+
+/**                                  service */
+export type ServicePath = `${string}/${string}` | string;
+/*                                                                                                service.method */
+export type ServiceMethod<P extends ServicePath, K extends keyof Record<string, any>> = `${P}.${K}`;
+
+export type TransportError = string;
+
+export interface ServerResponse<O, M> {
+  method: M;
+  status: Status;
+  error?: TransportError | null;
+  meta?: ResponseMeta | null;
+  response: O;
+}
+
+/**
+ * Unary request from client, single response from server
+ */
+export interface UnaryResponse<D> {
+  method: ServiceMethod<ServicePath, string>;
+  status: Status;
+  meta?: ResponseMeta | null;
+  response: D;
+}
+
+/**
+ * Stream requests from client, single response from server
+ */
+export interface IClientStream<I, O, M = string> {
+  send(data: I): Promise<void>;
+  complete(): Promise<ServerResponse<O, M>>;
+}
+
+/**
+ * Unary request from client, server stream response.
+ */
+export interface IServerStream<O, M = string> {
+  onError: (callback: (error: Error) => void) => void;
+  onMessage: (callback: (data: O) => void) => void;
+  onEnd: (callback: (result: ServerResponse<null | undefined, M>) => void) => void;
+}
+
+/**
+ * Duplex request from client, duplex response from server
+ */
+export interface IDuplexStream<I, O, M = string> extends IClientStream<I, O, M>, IServerStream<O, M> {}
+
+type KeyOfType = keyof Record<string, any>;
+
+interface IPackage<S extends ServicePath, D extends KeyOfType> {
+  id: number;
+  type: DataType;
+  method: ServiceMethod<S, D>;
+}
+
+export interface PackageClient<S extends ServicePath, D extends KeyOfType, P> extends IPackage<S, D> {
+  request?: P;
+}
+export interface PackageServer<S extends ServicePath, D extends KeyOfType, P> extends IPackage<S, D> {
+  response?: P | null;
+  status?: Status;
+  meta?: ResponseMeta | null;
+  error?: TransportError | null;
 }
