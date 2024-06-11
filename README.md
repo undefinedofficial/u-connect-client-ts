@@ -14,6 +14,16 @@ u-connect - это современная высокопроизводитель
 5. Большое кол-во потоков данных.
 6. Подключение долго остается открытым.
 
+### Установка
+
+```bash
+npm install https://github.com/undefinedofficial/u-connect-client-ts.git
+# or
+yarn add https://github.com/undefinedofficial/u-connect-client-ts.git
+# or
+pnpm install https://github.com/undefinedofficial/u-connect-client-ts.git
+```
+
 ### UConnectClient
 
 Перед взаимодействием с сервером необходимо создать экземпляр клиента.
