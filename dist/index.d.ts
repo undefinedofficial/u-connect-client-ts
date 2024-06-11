@@ -8,6 +8,13 @@ export declare class ClientService<S extends Record<string, any>> implements ISe
     duplex<K extends keyof S>(method: K, options?: ServiceMethodOptions): ReturnType<S[K]> extends IDuplexStream<any, any> ? ReturnType<S[K]> : void;
 }
 
+/**
+ * @u-connect/client-ts v1.0.0
+ * https://github.com/undefinedofficial/u-connect-client-ts.git
+ *
+ * Copyright (c) 2024 https://github.com/undefinedofficial
+ * Released under the MIT license
+ */
 declare const enum DataType {
     /** Received */
     CONNECT = 1,
@@ -153,6 +160,13 @@ export declare interface ServiceMethodOptions {
 /**                                  service */
 declare type ServicePath = `${string}/${string}` | string;
 
+/**
+ * @u-connect/client-ts v1.0.0
+ * https://github.com/undefinedofficial/u-connect-client-ts.git
+ *
+ * Copyright (c) 2024 https://github.com/undefinedofficial
+ * Released under the MIT license
+ */
 export declare enum Status {
     /**
      * The operation completed successfully.
