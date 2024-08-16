@@ -1405,7 +1405,18 @@ class ze {
    * @param options The options for the message.
    */
   async sendRequest(e, t, i) {
-    return this.state !== 2 && await this.connect(), new Promise((n, s) => {
+    if (this.state !== 2) {
+      const n = [this.connect()];
+      t != null && t.abort && n.push(
+        new Promise(
+          (s, o) => {
+            var h;
+            return (h = t == null ? void 0 : t.abort) == null ? void 0 : h.addEventListener("abort", () => o(new x(w.ABORTED, "Request aborted")));
+          }
+        )
+      ), await Promise.race(n);
+    }
+    return new Promise((n, s) => {
       var o;
       if (this._tasks.set(e.id, { onMessage: i, onEnd: n, onError: s }), this.send(e, t), t != null && t.abort || t != null && t.timeout) {
         const h = (c) => {

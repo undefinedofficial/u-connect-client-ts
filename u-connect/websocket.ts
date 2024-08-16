@@ -312,9 +312,23 @@ export class UConnectClient implements IUConnectClient {
     onMessage?: (data: PackageServer<ServicePath, string, O>) => void
   ): Promise<PackageServer<ServicePath, M, O>> {
     /**
-     * If the transport is not open, open it and wait for it to be opened.
+     * If the transport is not open, open it and wait for it to be opened before sending the message.
      */
-    if (this.state !== TransportState.OPEN) await this.connect();
+    if (this.state !== TransportState.OPEN) {
+      const reqProms = [this.connect()];
+      // Add an abort listener if the abort option is provided. If the request is aborted, reject the promise with an error.
+      // fix: hanging requests.
+      if (options?.abort) {
+        reqProms.push(
+          new Promise((_, reject) =>
+            options?.abort?.addEventListener("abort", () => reject(new MethodError(Status.ABORTED, "Request aborted")))
+          )
+        );
+      }
+
+      // Wait what ever the request is resolved or rejected.
+      await Promise.race(reqProms);
+    }
 
     /**
      * Add the message to the queue tasks and wait for the response
