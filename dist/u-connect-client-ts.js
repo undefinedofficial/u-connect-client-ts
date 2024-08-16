@@ -1,6 +1,6 @@
-var q = Object.defineProperty;
-var G = (r, e, t) => e in r ? q(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
-var v = (r, e, t) => (G(r, typeof e != "symbol" ? e + "" : e, t), t);
+var Y = Object.defineProperty;
+var q = (r, e, t) => e in r ? Y(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
+var v = (r, e, t) => (q(r, typeof e != "symbol" ? e + "" : e, t), t);
 class z {
   constructor() {
     v(this, "isOpen", !0);
@@ -9,13 +9,13 @@ class z {
     v(this, "InvokeError");
   }
   onError(e) {
-    this.InvokeError = e, this.isOpen || e(new Error("Transport closed"));
+    return this.InvokeError = e, this.isOpen || e(new Error("Transport closed")), this;
   }
   onMessage(e) {
-    this.InvokeMessage = e;
+    return this.InvokeMessage = e, this;
   }
   onEnd(e) {
-    this.InvokeEnd = e;
+    return this.InvokeEnd = e, this;
   }
   close() {
     var e;
@@ -112,7 +112,7 @@ class x extends Error {
   }
 }
 var w = /* @__PURE__ */ ((r) => (r[r.OK = 0] = "OK", r[r.CANCELLED = 1] = "CANCELLED", r[r.UNKNOWN = 2] = "UNKNOWN", r[r.INVALID_ARGUMENT = 3] = "INVALID_ARGUMENT", r[r.DEADLINE_EXCEEDED = 4] = "DEADLINE_EXCEEDED", r[r.NOT_FOUND = 5] = "NOT_FOUND", r[r.ALREADY_EXISTS = 6] = "ALREADY_EXISTS", r[r.PERMISSION_DENIED = 7] = "PERMISSION_DENIED", r[r.RESOURCE_EXHAUSTED = 8] = "RESOURCE_EXHAUSTED", r[r.FAILED_PRECONDITION = 9] = "FAILED_PRECONDITION", r[r.ABORTED = 10] = "ABORTED", r[r.OUT_OF_RANGE = 11] = "OUT_OF_RANGE", r[r.UNIMPLEMENTED = 12] = "UNIMPLEMENTED", r[r.INTERNAL = 13] = "INTERNAL", r[r.UNAVAILABLE = 14] = "UNAVAILABLE", r[r.DATA_LOSS = 15] = "DATA_LOSS", r[r.UNAUTHENTICATED = 16] = "UNAUTHENTICATED", r))(w || {});
-class $ {
+class G {
   constructor(e, t) {
     this._transport = e, this._service = t;
   }
@@ -258,7 +258,7 @@ function te(r, e, t) {
   r.length > j ? ee(r, e, t) : Z(r, e, t);
 }
 var re = 4096;
-function H(r, e, t) {
+function $(r, e, t) {
   for (var i = e, n = i + t, s = [], o = ""; i < n; ) {
     var h = r[i++];
     if (!(h & 128))
@@ -284,7 +284,7 @@ function se(r, e, t) {
   return ie.decode(i);
 }
 function oe(r, e, t) {
-  return t > ne ? se(r, e, t) : H(r, e, t);
+  return t > ne ? se(r, e, t) : $(r, e, t);
 }
 var N = (
   /** @class */
@@ -331,11 +331,11 @@ function he(r, e, t) {
   var i = t / 4294967296, n = t;
   r.setUint32(e, i), r.setUint32(e + 4, n);
 }
-function X(r, e, t) {
+function H(r, e, t) {
   var i = Math.floor(t / 4294967296), n = t;
   r.setUint32(e, i), r.setUint32(e + 4, n);
 }
-function K(r, e) {
+function X(r, e) {
   var t = r.getInt32(e), i = r.getUint32(e + 4);
   return t * 4294967296 + i;
 }
@@ -356,7 +356,7 @@ function de(r) {
     }
   else {
     var i = new Uint8Array(12), n = new DataView(i.buffer);
-    return n.setUint32(0, t), X(n, 4, e), i;
+    return n.setUint32(0, t), H(n, 4, e), i;
   }
 }
 function ve(r) {
@@ -385,7 +385,7 @@ function Ee(r) {
       return { sec: t, nsec: i };
     }
     case 12: {
-      var t = K(e, 4), i = e.getUint32(0);
+      var t = X(e, 4), i = e.getUint32(0);
       return { sec: t, nsec: i };
     }
     default:
@@ -400,7 +400,7 @@ var xe = {
   type: fe,
   encode: pe,
   decode: we
-}, Y = (
+}, K = (
   /** @class */
   function() {
     function r() {
@@ -456,7 +456,7 @@ var _e = 100, Ue = 2048, ge = (
   function() {
     function r(e) {
       var t, i, n, s, o, h, c, a;
-      this.extensionCodec = (t = e == null ? void 0 : e.extensionCodec) !== null && t !== void 0 ? t : Y.defaultCodec, this.context = e == null ? void 0 : e.context, this.useBigInt64 = (i = e == null ? void 0 : e.useBigInt64) !== null && i !== void 0 ? i : !1, this.maxDepth = (n = e == null ? void 0 : e.maxDepth) !== null && n !== void 0 ? n : _e, this.initialBufferSize = (s = e == null ? void 0 : e.initialBufferSize) !== null && s !== void 0 ? s : Ue, this.sortKeys = (o = e == null ? void 0 : e.sortKeys) !== null && o !== void 0 ? o : !1, this.forceFloat32 = (h = e == null ? void 0 : e.forceFloat32) !== null && h !== void 0 ? h : !1, this.ignoreUndefined = (c = e == null ? void 0 : e.ignoreUndefined) !== null && c !== void 0 ? c : !1, this.forceIntegerToFloat = (a = e == null ? void 0 : e.forceIntegerToFloat) !== null && a !== void 0 ? a : !1, this.pos = 0, this.view = new DataView(new ArrayBuffer(this.initialBufferSize)), this.bytes = new Uint8Array(this.view.buffer);
+      this.extensionCodec = (t = e == null ? void 0 : e.extensionCodec) !== null && t !== void 0 ? t : K.defaultCodec, this.context = e == null ? void 0 : e.context, this.useBigInt64 = (i = e == null ? void 0 : e.useBigInt64) !== null && i !== void 0 ? i : !1, this.maxDepth = (n = e == null ? void 0 : e.maxDepth) !== null && n !== void 0 ? n : _e, this.initialBufferSize = (s = e == null ? void 0 : e.initialBufferSize) !== null && s !== void 0 ? s : Ue, this.sortKeys = (o = e == null ? void 0 : e.sortKeys) !== null && o !== void 0 ? o : !1, this.forceFloat32 = (h = e == null ? void 0 : e.forceFloat32) !== null && h !== void 0 ? h : !1, this.ignoreUndefined = (c = e == null ? void 0 : e.ignoreUndefined) !== null && c !== void 0 ? c : !1, this.forceIntegerToFloat = (a = e == null ? void 0 : e.forceIntegerToFloat) !== null && a !== void 0 ? a : !1, this.pos = 0, this.view = new DataView(new ArrayBuffer(this.initialBufferSize)), this.bytes = new Uint8Array(this.view.buffer);
     }
     return r.prototype.reinitializeState = function() {
       this.pos = 0;
@@ -601,7 +601,7 @@ var _e = 100, Ue = 2048, ge = (
     }, r.prototype.writeU64 = function(e) {
       this.ensureBufferSizeToWrite(8), he(this.view, this.pos, e), this.pos += 8;
     }, r.prototype.writeI64 = function(e) {
-      this.ensureBufferSizeToWrite(8), X(this.view, this.pos, e), this.pos += 8;
+      this.ensureBufferSizeToWrite(8), H(this.view, this.pos, e), this.pos += 8;
     }, r.prototype.writeBigUint64 = function(e) {
       this.ensureBufferSizeToWrite(8), this.view.setBigUint64(this.pos, e), this.pos += 8;
     }, r.prototype.writeBigInt64 = function(e) {
@@ -644,7 +644,7 @@ var Ie = 16, me = 16, Te = (
       if (n != null)
         return this.hit++, n;
       this.miss++;
-      var s = H(e, t, i), o = Uint8Array.prototype.slice.call(e, t, t + i);
+      var s = $(e, t, i), o = Uint8Array.prototype.slice.call(e, t, t + i);
       return this.store(o, s), s;
     }, r;
   }()
@@ -806,7 +806,7 @@ var k = RangeError, W = new k("Insufficient data"), Ce = new Te(), Le = (
   function() {
     function r(e) {
       var t, i, n, s, o, h, c;
-      this.totalPos = 0, this.pos = 0, this.view = O, this.bytes = Me, this.headByte = T, this.stack = [], this.extensionCodec = (t = e == null ? void 0 : e.extensionCodec) !== null && t !== void 0 ? t : Y.defaultCodec, this.context = e == null ? void 0 : e.context, this.useBigInt64 = (i = e == null ? void 0 : e.useBigInt64) !== null && i !== void 0 ? i : !1, this.maxStrLength = (n = e == null ? void 0 : e.maxStrLength) !== null && n !== void 0 ? n : m, this.maxBinLength = (s = e == null ? void 0 : e.maxBinLength) !== null && s !== void 0 ? s : m, this.maxArrayLength = (o = e == null ? void 0 : e.maxArrayLength) !== null && o !== void 0 ? o : m, this.maxMapLength = (h = e == null ? void 0 : e.maxMapLength) !== null && h !== void 0 ? h : m, this.maxExtLength = (c = e == null ? void 0 : e.maxExtLength) !== null && c !== void 0 ? c : m, this.keyDecoder = (e == null ? void 0 : e.keyDecoder) !== void 0 ? e.keyDecoder : Ce;
+      this.totalPos = 0, this.pos = 0, this.view = O, this.bytes = Me, this.headByte = T, this.stack = [], this.extensionCodec = (t = e == null ? void 0 : e.extensionCodec) !== null && t !== void 0 ? t : K.defaultCodec, this.context = e == null ? void 0 : e.context, this.useBigInt64 = (i = e == null ? void 0 : e.useBigInt64) !== null && i !== void 0 ? i : !1, this.maxStrLength = (n = e == null ? void 0 : e.maxStrLength) !== null && n !== void 0 ? n : m, this.maxBinLength = (s = e == null ? void 0 : e.maxBinLength) !== null && s !== void 0 ? s : m, this.maxArrayLength = (o = e == null ? void 0 : e.maxArrayLength) !== null && o !== void 0 ? o : m, this.maxMapLength = (h = e == null ? void 0 : e.maxMapLength) !== null && h !== void 0 ? h : m, this.maxExtLength = (c = e == null ? void 0 : e.maxExtLength) !== null && c !== void 0 ? c : m, this.keyDecoder = (e == null ? void 0 : e.keyDecoder) !== void 0 ? e.keyDecoder : Ce;
     }
     return r.prototype.reinitializeState = function() {
       this.totalPos = 0, this.headByte = T, this.stack.length = 0;
@@ -1225,7 +1225,7 @@ var k = RangeError, W = new k("Insufficient data"), Ce = new Te(), Le = (
       var e = ce(this.view, this.pos);
       return this.pos += 8, e;
     }, r.prototype.readI64 = function() {
-      var e = K(this.view, this.pos);
+      var e = X(this.view, this.pos);
       return this.pos += 8, e;
     }, r.prototype.readU64AsBigInt = function() {
       var e = this.view.getBigUint64(this.pos);
@@ -1336,7 +1336,7 @@ class ze {
    * @return {IService<S>} A new TransportService instance.
    */
   service(e) {
-    return new $(this, e);
+    return new G(this, e);
   }
   /**
    * Reconnects the WebSocketTransport if it is disconnected state.
@@ -1433,7 +1433,9 @@ class ze {
     const t = this._tasks.get(e.id);
     switch (e.type) {
       case p.UNARY_CLIENT: {
-        t && (this._options.debug && _("unary responce " + e.method), this._tasks.delete(e.id), e.error ? t.onError(new x(e.status ?? w.INTERNAL, e.error)) : t.onEnd(e));
+        t && (this._options.debug && _(
+          `unary responce ${e.method} ${e.status}(${w[e.status]}) ${e.error ? "error message: " + e.error : "success"}`
+        ), this._tasks.delete(e.id), e.error ? t.onError(new x(e.status ?? w.INTERNAL, e.error)) : t.onEnd(e));
         break;
       }
       case p.STREAM_CLIENT:
@@ -1441,11 +1443,13 @@ class ze {
         t && (this._options.debug && _("stream data " + e.method), (i = t.onMessage) == null || i.call(t, e));
         break;
       case p.STREAM_END: {
-        t && (this._options.debug && _("stream end " + e.method), e.error ? t.onError(new x(e.status ?? w.INTERNAL, e.error)) : t.onEnd(e), this._tasks.delete(e.id));
+        t && (this._options.debug && _(
+          `stream end ${e.method} ${e.status}(${w[e.status]}) ${e.error ? "error message: " + e.error : "success"}`
+        ), e.error ? t.onError(new x(e.status ?? w.INTERNAL, e.error)) : t.onEnd(e), this._tasks.delete(e.id));
         break;
       }
       case p.ABORT: {
-        this._options.debug && _("Abort request" + e.method), t && t.onError(new x(e.status ?? w.ABORTED, e.error ?? "Request aborted"));
+        this._options.debug && _(`abort request ${e.method}`), t && t.onError(new x(e.status ?? w.ABORTED, e.error ?? "Request aborted"));
         break;
       }
       case p.CONNECT:
@@ -1473,7 +1477,7 @@ class ze {
   }
 }
 export {
-  $ as ClientService,
+  G as ClientService,
   x as MethodError,
   w as Status,
   B as TransportState,

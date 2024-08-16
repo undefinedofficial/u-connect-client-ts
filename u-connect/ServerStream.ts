@@ -17,12 +17,15 @@ export class ServerStream<T = any, M = string> implements IServerStream<T, M> {
   onError(callback: (error: Error) => void) {
     this.InvokeError = callback;
     if (!this.isOpen) callback(new Error("Transport closed"));
+    return this;
   }
   onMessage(callback: (data: T) => void) {
     this.InvokeMessage = callback;
+    return this;
   }
   onEnd(callback: (result: ServerResponse<null | undefined, M>) => void) {
     this.InvokeEnd = callback;
+    return this;
   }
 
   close() {

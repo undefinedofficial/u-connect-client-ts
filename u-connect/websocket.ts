@@ -355,7 +355,12 @@ export class UConnectClient implements IUConnectClient {
     switch (message.type) {
       case DataType.UNARY_CLIENT: {
         if (task) {
-          if (this._options.debug) debugWrite("unary responce " + message.method);
+          if (this._options.debug)
+            debugWrite(
+              `unary responce ${message.method} ${message.status}(${Status[message.status!]}) ${
+                message.error ? "error message: " + message.error : "success"
+              }`
+            );
           this._tasks.delete(message.id);
           // If the message has an error, reject the promise with the error message and status code default to INTERNAL server error.
           if (message.error) task.onError(new MethodError(message.status ?? Status.INTERNAL, message.error));
@@ -374,7 +379,12 @@ export class UConnectClient implements IUConnectClient {
 
       case DataType.STREAM_END: {
         if (task) {
-          if (this._options.debug) debugWrite("stream end " + message.method);
+          if (this._options.debug)
+            debugWrite(
+              `stream end ${message.method} ${message.status}(${Status[message.status!]}) ${
+                message.error ? "error message: " + message.error : "success"
+              }`
+            );
           // If the message has an error, reject the promise with the error message and status code default to INTERNAL server error.
           if (message.error) task.onError(new MethodError(message.status ?? Status.INTERNAL, message.error));
           else task.onEnd(message);
@@ -384,7 +394,7 @@ export class UConnectClient implements IUConnectClient {
       }
 
       case DataType.ABORT: {
-        if (this._options.debug) debugWrite("Abort request" + message.method);
+        if (this._options.debug) debugWrite(`abort request ${message.method}`);
 
         if (task) task.onError(new MethodError(message.status ?? Status.ABORTED, message.error ?? "Request aborted"));
         break;

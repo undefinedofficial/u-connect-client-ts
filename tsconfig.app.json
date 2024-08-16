@@ -1,14 +1,14 @@
 {
   "extends": "@vue/tsconfig/tsconfig.dom.json",
-  "include": ["env.d.ts", "src/**/*", "src/**/*.vue", "u-connect/**/*"],
-  "exclude": ["src/**/__tests__/*"],
+  "include": ["env.d.ts", "example/**/*", "example/**/*.vue", "u-connect/**/*"],
+  "exclude": ["example/**/__tests__/*"],
   "compilerOptions": {
     "composite": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
 
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["example/*"]
     }
   }
 }

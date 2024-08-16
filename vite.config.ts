@@ -17,7 +17,7 @@ export default defineConfig({
   plugins: [vue(), dts({ rollupTypes: true, include: ["u-connect/**/*"] })],
   resolve: {
     alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url))
+      "@": fileURLToPath(new URL("./example", import.meta.url))
     }
   },
   build: {
@@ -31,8 +31,8 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "http://localhost:3000",
-        // target: "http://localhost:5131",
+        // target: "http://localhost:3000",
+        target: "http://localhost:5131",
         changeOrigin: true,
         ws: true
       }

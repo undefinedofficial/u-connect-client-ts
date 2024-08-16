@@ -286,4 +286,3 @@ tryOnMounted(async () => {
   overflow: hidden;
 }
 </style>
-../u-connect
