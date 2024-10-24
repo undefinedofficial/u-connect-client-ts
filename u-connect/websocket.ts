@@ -341,12 +341,18 @@ export class UConnectClient implements IUConnectClient {
       if (options?.abort || options?.timeout) {
         const abort = (e: MethodError) => {
           const { id, method } = message;
-          this.send({ id, method, type: DataType.ABORT });
-          onError(e);
+
+          // fix: check and freeing task.
+          if (this._tasks.delete(id)) {
+            this.send({ id, method, type: DataType.ABORT });
+            onError(e);
+          }
         };
         options.abort?.addEventListener("abort", () => abort(new MethodError(Status.ABORTED, "Request aborted")));
 
-        if (options.timeout) setTimeout(() => abort(new MethodError(Status.DEADLINE_EXCEEDED, "Request timed out")), options.timeout);
+        if (options.timeout)
+          // I know... its not critical.
+          setTimeout(() => abort(new MethodError(Status.DEADLINE_EXCEEDED, "Request timed out")), options.timeout);
       }
     });
   }
