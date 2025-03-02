@@ -114,7 +114,7 @@ export class UConnectClient implements IUConnectClient {
   /** The number of reconnect attempts */
   private _attempts = 0;
 
-  private _reconnectPromises: PromiseValue<IUConnectClient>[];
+  private _reconnectPromise: PromiseValue<IUConnectClient> | null;
 
   /** The id of the last task */
   private _id: number;
@@ -145,7 +145,7 @@ export class UConnectClient implements IUConnectClient {
     };
     this._emitter = new EventEmitter();
     this._attempts = 0;
-    this._reconnectPromises = [];
+    this._reconnectPromise = null;
     this._id = 0;
     this._tasks = new Map();
     this._state = TransportState.CLOSED;
@@ -157,13 +157,13 @@ export class UConnectClient implements IUConnectClient {
   async connect(): Promise<IUConnectClient> {
     if (this.state === TransportState.OPEN) return this;
 
-    this.state = TransportState.CONNECTING;
+    if (this.state !== TransportState.RECONNECTING) this.state = TransportState.CONNECTING;
 
-    const reconnectPromise = new PromiseValue<IUConnectClient>();
-    this._reconnectPromises.push(reconnectPromise);
-
-    this.createSocket();
-    return reconnectPromise.value();
+    if (this._reconnectPromise === null) {
+      this._reconnectPromise = new PromiseValue<IUConnectClient>();
+      this.createSocket();
+    }
+    return this._reconnectPromise.value();
   }
 
   /**
@@ -217,6 +217,8 @@ export class UConnectClient implements IUConnectClient {
    */
   private createSocket() {
     if (this._socket?.readyState !== 0 && this._socket?.readyState !== 1) {
+      if (this._options.debug) debugWrite("create socket");
+
       this._socket = new this._options.client(this._options.url, "u-connect-web");
       this._socket.binaryType = "arraybuffer";
 
@@ -226,8 +228,8 @@ export class UConnectClient implements IUConnectClient {
       this._socket.addEventListener("open", () => {
         this.state = TransportState.OPEN;
         this._attempts = 0;
-        this._reconnectPromises.forEach((p) => p.resolve(this));
-        this._reconnectPromises = [];
+        this._reconnectPromise?.resolve(this);
+        this._reconnectPromise = null;
         if (this._options.debug) debugWrite("connected");
       });
 
@@ -270,8 +272,8 @@ export class UConnectClient implements IUConnectClient {
     this._tasks.forEach((stream) => stream.onError(new MethodError(Status.UNAVAILABLE, "Transport closed")));
     this._tasks.clear();
 
-    this._reconnectPromises.forEach((p) => p.reject(new MethodError(Status.UNAVAILABLE, "Transport closed")));
-    this._reconnectPromises = [];
+    this._reconnectPromise?.reject(new MethodError(Status.UNAVAILABLE, "Transport closed"));
+    this._reconnectPromise = null;
 
     this._socket?.close();
   }
