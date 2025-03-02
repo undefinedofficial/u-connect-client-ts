@@ -6,13 +6,13 @@
  * Released under the MIT license
  */
 
-import type { UConnectClient } from "./websocket";
+import type { UConnectClient } from "./Websocket";
 import type { IClientStream, IDuplexStream, IServerStream, RequestMeta, ServiceMethod, ServicePath, UnaryResponse } from "./DataType";
 import { ServerStream } from "./ServerStream";
 import { ClientStream } from "./ClientStream";
-import { MethodError } from "./exceptions";
+import { MethodError } from "./Exceptions";
 import { DataType } from "./DataType";
-import { Status } from "./status";
+import { Status } from "./Status";
 
 /**
  * Request options

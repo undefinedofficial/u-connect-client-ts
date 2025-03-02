@@ -9,7 +9,7 @@
 import type { IClientStream, ServerResponse } from "./DataType";
 import { DataType } from "./DataType";
 import { PromiseValue } from "./utils/PromiceValue";
-import type { UConnectClient } from "./websocket";
+import type { UConnectClient } from "./Websocket";
 
 export class ClientStream<I, O, M = string> implements IClientStream<I, O, M> {
   private _result: PromiseValue<ServerResponse<O, M>>;
@@ -26,6 +26,7 @@ export class ClientStream<I, O, M = string> implements IClientStream<I, O, M> {
     this._transport.send({ id: this.id, type: DataType.STREAM_CLIENT, method: this.method as any, request: data });
     return this._next.value();
   }
+
   async complete(): Promise<ServerResponse<O, M>> {
     this._transport.send({ id: this.id, type: DataType.STREAM_END, method: this.method as any });
     return this._result.value();

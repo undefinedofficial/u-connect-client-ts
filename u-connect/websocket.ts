@@ -8,9 +8,9 @@
 
 import { decode, encode } from "@msgpack/msgpack";
 import type { PackageClient, PackageServer, ServicePath } from "./DataType";
-import { ClientService, type IService, type ServiceMethodOptions } from "./service";
-import { MethodError } from "./exceptions";
-import { Status } from "./status";
+import { ClientService, type IService, type ServiceMethodOptions } from "./Service";
+import { MethodError } from "./Exceptions";
+import { Status } from "./Status";
 import { DataType } from "./DataType";
 import { EventEmitter, PromiseValue } from "./utils/index";
 

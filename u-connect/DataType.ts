@@ -5,6 +5,7 @@
  * Copyright (c) 2024 https://github.com/undefinedofficial
  * Released under the MIT license
  */
+import type { Status } from "./Status";
 
 export const enum DataType {
   /** Received */
@@ -45,8 +46,6 @@ export const enum DataType {
    */
   ABORT = 9
 }
-
-import type { Status } from "./status";
 
 export type RequestMeta<T = Record<string, string>> = T;
 
