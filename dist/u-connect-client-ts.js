@@ -1,12 +1,12 @@
 var Y = Object.defineProperty;
 var q = (r, e, t) => e in r ? Y(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
-var v = (r, e, t) => q(r, typeof e != "symbol" ? e + "" : e, t);
+var d = (r, e, t) => q(r, typeof e != "symbol" ? e + "" : e, t);
 class z {
   constructor() {
-    v(this, "isOpen", !0);
-    v(this, "InvokeEnd");
-    v(this, "InvokeMessage");
-    v(this, "InvokeError");
+    d(this, "isOpen", !0);
+    d(this, "InvokeEnd");
+    d(this, "InvokeMessage");
+    d(this, "InvokeError");
   }
   onError(e) {
     return this.InvokeError = e, this.isOpen || e(new Error("Transport closed")), this;
@@ -25,10 +25,11 @@ class z {
 var p = /* @__PURE__ */ ((r) => (r[r.CONNECT = 1] = "CONNECT", r[r.DISCONNECT = 2] = "DISCONNECT", r[r.UNARY_CLIENT = 3] = "UNARY_CLIENT", r[r.UNARY_SERVER = 4] = "UNARY_SERVER", r[r.STREAM_CLIENT = 5] = "STREAM_CLIENT", r[r.STREAM_SERVER = 6] = "STREAM_SERVER", r[r.STREAM_DUPLEX = 7] = "STREAM_DUPLEX", r[r.STREAM_END = 8] = "STREAM_END", r[r.ABORT = 9] = "ABORT", r))(p || {});
 class L {
   constructor() {
-    v(this, "_value");
-    v(this, "_error");
-    v(this, "_resolve");
-    v(this, "_reject");
+    d(this, "_value");
+    d(this, "_error");
+    d(this, "_resolve");
+    d(this, "_reject");
+    d(this, "_task");
   }
   /**
    * Check if the PromiseValue has a stored value or error.
@@ -56,9 +57,9 @@ class L {
    * @return {Promise<T>} A Promise that resolves with the value or rejects with the error.
    */
   value() {
-    return this._value ? Promise.resolve(this._value) : this._error ? Promise.reject(this._error) : new Promise((e, t) => {
+    return this._value ? Promise.resolve(this._value) : this._error ? Promise.reject(this._error) : (this._task || (this._task = new Promise((e, t) => {
       this._resolve = e, this._reject = t;
-    });
+    })), this._task);
   }
   /**
    * Resolves the promise with the given value.
@@ -79,12 +80,12 @@ class L {
 }
 class V {
   constructor(e, t, i) {
-    v(this, "_result");
-    v(this, "_next");
+    d(this, "_result");
+    d(this, "_next");
     this._transport = e, this.id = t, this.method = i, this._result = new L();
   }
   async send(e) {
-    return this._result.has() ? Promise.reject() : (this._next = new L(), this._transport.send({ id: this.id, type: p.STREAM_CLIENT, method: this.method, request: e }), this._next.value());
+    return this._result.has() ? Promise.reject("u-connect-client-ts: client stream error") : (this._next = new L(), this._transport.send({ id: this.id, type: p.STREAM_CLIENT, method: this.method, request: e }), this._next.value());
   }
   async complete() {
     return this._transport.send({ id: this.id, type: p.STREAM_END, method: this.method }), this._result.value();
@@ -442,18 +443,18 @@ var xe = {
 function R(r) {
   return r instanceof Uint8Array ? r : ArrayBuffer.isView(r) ? new Uint8Array(r.buffer, r.byteOffset, r.byteLength) : r instanceof ArrayBuffer ? new Uint8Array(r) : Uint8Array.from(r);
 }
-function ye(r) {
+function _e(r) {
   if (r instanceof ArrayBuffer)
     return new DataView(r);
   var e = R(r);
   return new DataView(e.buffer, e.byteOffset, e.byteLength);
 }
-var _e = 100, Ue = 2048, ge = (
+var ye = 100, Ue = 2048, ge = (
   /** @class */
   function() {
     function r(e) {
       var t, i, n, s, o, h, c, a;
-      this.extensionCodec = (t = e == null ? void 0 : e.extensionCodec) !== null && t !== void 0 ? t : K.defaultCodec, this.context = e == null ? void 0 : e.context, this.useBigInt64 = (i = e == null ? void 0 : e.useBigInt64) !== null && i !== void 0 ? i : !1, this.maxDepth = (n = e == null ? void 0 : e.maxDepth) !== null && n !== void 0 ? n : _e, this.initialBufferSize = (s = e == null ? void 0 : e.initialBufferSize) !== null && s !== void 0 ? s : Ue, this.sortKeys = (o = e == null ? void 0 : e.sortKeys) !== null && o !== void 0 ? o : !1, this.forceFloat32 = (h = e == null ? void 0 : e.forceFloat32) !== null && h !== void 0 ? h : !1, this.ignoreUndefined = (c = e == null ? void 0 : e.ignoreUndefined) !== null && c !== void 0 ? c : !1, this.forceIntegerToFloat = (a = e == null ? void 0 : e.forceIntegerToFloat) !== null && a !== void 0 ? a : !1, this.pos = 0, this.view = new DataView(new ArrayBuffer(this.initialBufferSize)), this.bytes = new Uint8Array(this.view.buffer);
+      this.extensionCodec = (t = e == null ? void 0 : e.extensionCodec) !== null && t !== void 0 ? t : K.defaultCodec, this.context = e == null ? void 0 : e.context, this.useBigInt64 = (i = e == null ? void 0 : e.useBigInt64) !== null && i !== void 0 ? i : !1, this.maxDepth = (n = e == null ? void 0 : e.maxDepth) !== null && n !== void 0 ? n : ye, this.initialBufferSize = (s = e == null ? void 0 : e.initialBufferSize) !== null && s !== void 0 ? s : Ue, this.sortKeys = (o = e == null ? void 0 : e.sortKeys) !== null && o !== void 0 ? o : !1, this.forceFloat32 = (h = e == null ? void 0 : e.forceFloat32) !== null && h !== void 0 ? h : !1, this.ignoreUndefined = (c = e == null ? void 0 : e.ignoreUndefined) !== null && c !== void 0 ? c : !1, this.forceIntegerToFloat = (a = e == null ? void 0 : e.forceIntegerToFloat) !== null && a !== void 0 ? a : !1, this.pos = 0, this.view = new DataView(new ArrayBuffer(this.initialBufferSize)), this.bytes = new Uint8Array(this.view.buffer);
     }
     return r.prototype.reinitializeState = function() {
       this.pos = 0;
@@ -800,7 +801,7 @@ var k = RangeError, W = new k("Insufficient data"), Ce = new Te(), Le = (
     return r.prototype.reinitializeState = function() {
       this.totalPos = 0, this.headByte = T, this.stack.length = 0;
     }, r.prototype.setBuffer = function(e) {
-      this.bytes = R(e), this.view = ye(this.bytes), this.pos = 0;
+      this.bytes = R(e), this.view = _e(this.bytes), this.pos = 0;
     }, r.prototype.appendBuffer = function(e) {
       if (this.headByte === T && !this.hasRemaining(1))
         this.setBuffer(e);
@@ -838,17 +839,17 @@ var k = RangeError, W = new k("Insufficient data"), Ce = new Te(), Le = (
     }, r.prototype.decodeAsync = function(e) {
       var t, i, n, s, o, h, c;
       return Ne(this, void 0, void 0, function() {
-        var a, f, l, u, E, g, A, d;
-        return M(this, function(_) {
-          switch (_.label) {
+        var a, f, l, u, E, g, A, v;
+        return M(this, function(y) {
+          switch (y.label) {
             case 0:
-              a = !1, _.label = 1;
+              a = !1, y.label = 1;
             case 1:
-              _.trys.push([1, 6, 7, 12]), t = !0, i = F(e), _.label = 2;
+              y.trys.push([1, 6, 7, 12]), t = !0, i = F(e), y.label = 2;
             case 2:
               return [4, i.next()];
             case 3:
-              if (n = _.sent(), s = n.done, !!s) return [3, 5];
+              if (n = y.sent(), s = n.done, !!s) return [3, 5];
               c = n.value, t = !1;
               try {
                 if (l = c, a)
@@ -864,17 +865,17 @@ var k = RangeError, W = new k("Insufficient data"), Ce = new Te(), Le = (
               } finally {
                 t = !0;
               }
-              _.label = 4;
+              y.label = 4;
             case 4:
               return [3, 2];
             case 5:
               return [3, 12];
             case 6:
-              return u = _.sent(), o = { error: u }, [3, 12];
+              return u = y.sent(), o = { error: u }, [3, 12];
             case 7:
-              return _.trys.push([7, , 10, 11]), !t && !s && (h = i.return) ? [4, h.call(i)] : [3, 9];
+              return y.trys.push([7, , 10, 11]), !t && !s && (h = i.return) ? [4, h.call(i)] : [3, 9];
             case 8:
-              _.sent(), _.label = 9;
+              y.sent(), y.label = 9;
             case 9:
               return [3, 11];
             case 10:
@@ -894,7 +895,7 @@ var k = RangeError, W = new k("Insufficient data"), Ce = new Te(), Le = (
                   throw this.createExtraByteError(this.totalPos);
                 return [2, f];
               }
-              throw E = this, g = E.headByte, A = E.pos, d = E.totalPos, new RangeError("Insufficient data in parsing ".concat(D(g), " at ").concat(d, " (").concat(A, " in the current buffer)"));
+              throw E = this, g = E.headByte, A = E.pos, v = E.totalPos, new RangeError("Insufficient data in parsing ".concat(D(g), " at ").concat(v, " (").concat(A, " in the current buffer)"));
           }
         });
       });
@@ -905,33 +906,33 @@ var k = RangeError, W = new k("Insufficient data"), Ce = new Te(), Le = (
     }, r.prototype.decodeMultiAsync = function(e, t) {
       return Se(this, arguments, function() {
         var n, s, o, h, c, a, f, l, u, E, g, A;
-        return M(this, function(d) {
-          switch (d.label) {
+        return M(this, function(v) {
+          switch (v.label) {
             case 0:
-              n = t, s = -1, d.label = 1;
+              n = t, s = -1, v.label = 1;
             case 1:
-              d.trys.push([1, 15, 16, 21]), o = !0, h = F(e), d.label = 2;
+              v.trys.push([1, 15, 16, 21]), o = !0, h = F(e), v.label = 2;
             case 2:
               return [4, I(h.next())];
             case 3:
-              if (c = d.sent(), u = c.done, !!u) return [3, 14];
-              A = c.value, o = !1, d.label = 4;
+              if (c = v.sent(), u = c.done, !!u) return [3, 14];
+              A = c.value, o = !1, v.label = 4;
             case 4:
-              if (d.trys.push([4, , 12, 13]), a = A, t && s === 0)
+              if (v.trys.push([4, , 12, 13]), a = A, t && s === 0)
                 throw this.createExtraByteError(this.totalPos);
-              this.appendBuffer(a), n && (s = this.readArraySize(), n = !1, this.complete()), d.label = 5;
+              this.appendBuffer(a), n && (s = this.readArraySize(), n = !1, this.complete()), v.label = 5;
             case 5:
-              d.trys.push([5, 10, , 11]), d.label = 6;
+              v.trys.push([5, 10, , 11]), v.label = 6;
             case 6:
               return [4, I(this.doDecodeSync())];
             case 7:
-              return [4, d.sent()];
+              return [4, v.sent()];
             case 8:
-              return d.sent(), --s === 0 ? [3, 9] : [3, 6];
+              return v.sent(), --s === 0 ? [3, 9] : [3, 6];
             case 9:
               return [3, 11];
             case 10:
-              if (f = d.sent(), !(f instanceof k))
+              if (f = v.sent(), !(f instanceof k))
                 throw f;
               return [3, 11];
             case 11:
@@ -946,11 +947,11 @@ var k = RangeError, W = new k("Insufficient data"), Ce = new Te(), Le = (
             case 14:
               return [3, 21];
             case 15:
-              return l = d.sent(), E = { error: l }, [3, 21];
+              return l = v.sent(), E = { error: l }, [3, 21];
             case 16:
-              return d.trys.push([16, , 19, 20]), !o && !u && (g = h.return) ? [4, I(g.call(h))] : [3, 18];
+              return v.trys.push([16, , 19, 20]), !o && !u && (g = h.return) ? [4, I(g.call(h))] : [3, 18];
             case 17:
-              d.sent(), d.label = 18;
+              v.sent(), v.label = 18;
             case 18:
               return [3, 20];
             case 19:
@@ -1232,7 +1233,7 @@ function ke(r, e) {
 }
 class Be {
   constructor() {
-    v(this, "_listeners", /* @__PURE__ */ new Map());
+    d(this, "_listeners", /* @__PURE__ */ new Map());
   }
   on(e, t) {
     var i;
@@ -1255,7 +1256,7 @@ class Be {
     this._listeners.has(e) && ((i = this._listeners.get(e)) == null || i.forEach((n) => n(t)));
   }
 }
-function y(r) {
+function _(r) {
   console.info("%c u-connect : ", "color: #42AAFF;", r);
 }
 function C(r) {
@@ -1267,19 +1268,19 @@ function Oe(r, ...e) {
 var B = /* @__PURE__ */ ((r) => (r[r.CLOSED = 0] = "CLOSED", r[r.CONNECTING = 1] = "CONNECTING", r[r.OPEN = 2] = "OPEN", r[r.RECONNECTING = 3] = "RECONNECTING", r))(B || {});
 class ze {
   constructor(e) {
-    v(this, "_options");
-    v(this, "_emitter");
+    d(this, "_options");
+    d(this, "_emitter");
     /** The websocket instance */
-    v(this, "_socket");
+    d(this, "_socket");
     /** The number of reconnect attempts */
-    v(this, "_attempts", 0);
-    v(this, "_reconnectPromise");
+    d(this, "_attempts", 0);
+    d(this, "_reconnectPromise");
     /** The id of the last task */
-    v(this, "_id");
+    d(this, "_id");
     /** Map of tasks by id */
-    v(this, "_tasks");
+    d(this, "_tasks");
     /** Current state of the connection */
-    v(this, "_state");
+    d(this, "_state");
     if (typeof WebSocket > "u" && e.client === void 0)
       throw new Error("WebSocket API is not supported in this environment or no client was provided.");
     this._options = {
@@ -1292,7 +1293,7 @@ class ze {
     return this._state;
   }
   set state(e) {
-    this._options.debug && y(`state change from ${B[this._state]} to ${B[e]}`), this._state = e, this._emitter.emit("status", e);
+    this._state !== e && (this._options.debug && _(`state change from ${B[this._state]} to ${B[e]}`), this._state = e, this._emitter.emit("status", e));
   }
   /**
    * Asynchronously establishes a WebSocket connection and returns a Promise that resolves to the Transport instance.
@@ -1307,7 +1308,7 @@ class ze {
    */
   async disconnect() {
     if (this.state !== 0)
-      return this._options.debug && y("disconnect"), this.dispose(), Promise.resolve();
+      return this._options.debug && _("disconnect"), this.dispose(), Promise.resolve();
   }
   /**
    * Creates a local namespace with the given service ID and returns remote methods for calling.
@@ -1325,7 +1326,7 @@ class ze {
   async reconnect(e = 0, t) {
     this.state === 2 && (this._id = 0, this._tasks.forEach((n) => n.onError(new x(w.UNAVAILABLE, "Transport closed"))), this._tasks.clear(), this.state = 3);
     const i = typeof this._options.reconnectDelay == "function" ? this._options.reconnectDelay(e, t) : this._options.reconnectDelay;
-    i && (await new Promise((n) => setTimeout(n, i)), this._options.debug && y("connecting attempt №" + e), this.createSocket());
+    i !== !1 && (await new Promise((n) => setTimeout(n, i)), this._options.debug && _("connecting attempt №" + e), this.createSocket());
   }
   /**
    * Creates the WebSocket instance.
@@ -1333,11 +1334,11 @@ class ze {
    */
   createSocket() {
     var e, t;
-    return ((e = this._socket) == null ? void 0 : e.readyState) !== 0 && ((t = this._socket) == null ? void 0 : t.readyState) !== 1 ? (this._options.debug && y("create socket"), this._socket = new this._options.client(this._options.url, "u-connect-web"), this._socket.binaryType = "arraybuffer", this._socket.addEventListener("open", () => {
+    return ((e = this._socket) == null ? void 0 : e.readyState) !== 0 && ((t = this._socket) == null ? void 0 : t.readyState) !== 1 ? (this._options.debug && _("create socket"), this._socket = new this._options.client(this._options.url, "u-connect-web"), this._socket.binaryType = "arraybuffer", this._socket.addEventListener("open", () => {
       var i;
-      this.state = 2, this._attempts = 0, (i = this._reconnectPromise) == null || i.resolve(this), this._reconnectPromise = null, this._options.debug && y("connected");
+      this.state = 2, this._attempts = 0, (i = this._reconnectPromise) == null || i.resolve(this), this._reconnectPromise = null, this._options.debug && _("connected");
     }), this._socket.addEventListener("error", (i) => {
-      this._options.debug && y(i);
+      this._options.debug && _(i);
     }), this._socket.addEventListener("close", (i) => {
       this._state !== 0 && this.reconnect(this._attempts++, i);
     }), this._socket.addEventListener("message", (i) => this.onMessage(this.deserialize(i.data))), !0) : !1;
@@ -1357,7 +1358,7 @@ class ze {
    * @param {ServiceMethodOptions} [options] - The options for the message.
    */
   send(e, t) {
-    this._options.debug && y("send data " + e.method), this._socket.send(this.serialize(e, t));
+    this._options.debug && _("send data " + e.method), this._socket.send(this.serialize(e, t));
   }
   /**
    * The last step in serializes a TransportPackageClient object and returns the serialized data.
@@ -1424,23 +1425,23 @@ class ze {
     const t = this._tasks.get(e.id);
     switch (e.type) {
       case p.UNARY_CLIENT: {
-        t && (this._options.debug && y(
+        t && (this._options.debug && _(
           `unary responce ${e.method} ${e.status}(${w[e.status]}) ${e.error ? "error message: " + e.error : "success"}`
         ), this._tasks.delete(e.id), e.error ? t.onError(new x(e.status ?? w.INTERNAL, e.error)) : t.onEnd(e));
         break;
       }
       case p.STREAM_CLIENT:
       case p.STREAM_SERVER:
-        t && (this._options.debug && y("stream data " + e.method), (i = t.onMessage) == null || i.call(t, e));
+        t && (this._options.debug && _("stream data " + e.method), (i = t.onMessage) == null || i.call(t, e));
         break;
       case p.STREAM_END: {
-        t && (this._options.debug && y(
+        t && (this._options.debug && _(
           `stream end ${e.method} ${e.status}(${w[e.status]}) ${e.error ? "error message: " + e.error : "success"}`
         ), e.error ? t.onError(new x(e.status ?? w.INTERNAL, e.error)) : t.onEnd(e), this._tasks.delete(e.id));
         break;
       }
       case p.ABORT: {
-        this._options.debug && y(`abort request ${e.method}`), t && t.onError(new x(e.status ?? w.ABORTED, e.error ?? "Request aborted"));
+        this._options.debug && _(`abort request ${e.method}`), t && t.onError(new x(e.status ?? w.ABORTED, e.error ?? "Request aborted"));
         break;
       }
       case p.CONNECT:

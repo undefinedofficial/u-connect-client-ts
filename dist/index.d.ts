@@ -412,9 +412,9 @@ export declare interface UConnectClientOptions {
      */
     debug?: boolean;
     /**
-     * reconnect delay in ms (default: 1000) or 0 to disable
+     * reconnect delay in ms (default: 1000) or false to disable
      */
-    reconnectDelay?: number | ((reconnects: number, e: IClientCloseEvent) => number);
+    reconnectDelay?: number | false | ((reconnects: number, e: IClientCloseEvent) => number | false);
     /**
      * custom client for websocket connection (default: WebSocket browser API)
      */
