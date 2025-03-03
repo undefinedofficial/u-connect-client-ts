@@ -1,6 +1,6 @@
 var Y = Object.defineProperty;
 var q = (r, e, t) => e in r ? Y(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
-var v = (r, e, t) => (q(r, typeof e != "symbol" ? e + "" : e, t), t);
+var v = (r, e, t) => q(r, typeof e != "symbol" ? e + "" : e, t);
 class z {
   constructor() {
     v(this, "isOpen", !0);
@@ -155,8 +155,7 @@ class G {
       i,
       (s) => {
         var o, h;
-        if (s.type === p.STREAM_SERVER)
-          return (o = n.InvokeMessage) == null ? void 0 : o.call(n, s.response);
+        if (s.type === p.STREAM_SERVER) return (o = n.InvokeMessage) == null ? void 0 : o.call(n, s.response);
         (h = n.InvokeError) == null || h.call(n, new x(w.INTERNAL, "Internal server error"));
       }
     ).then((s) => {
@@ -191,8 +190,7 @@ class G {
         s.next();
         return;
       }
-      if (c.type === p.STREAM_SERVER)
-        return (f = o.InvokeMessage) == null ? void 0 : f.call(o, c.response);
+      if (c.type === p.STREAM_SERVER) return (f = o.InvokeMessage) == null ? void 0 : f.call(o, c.response);
       const a = new x(w.INTERNAL, "Internal server error");
       s.error(a), (l = o.InvokeError) == null || l.call(o, a);
     }).then((c) => {
@@ -299,8 +297,7 @@ var N = (
     return r = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function(i, n) {
       i.__proto__ = n;
     } || function(i, n) {
-      for (var s in n)
-        Object.prototype.hasOwnProperty.call(n, s) && (i[s] = n[s]);
+      for (var s in n) Object.prototype.hasOwnProperty.call(n, s) && (i[s] = n[s]);
     }, r(e, t);
   };
   return function(e, t) {
@@ -628,13 +625,12 @@ var Ie = 16, me = 16, Te = (
       return e > 0 && e <= this.maxKeyLength;
     }, r.prototype.find = function(e, t, i) {
       var n = this.caches[i - 1];
-      e:
-        for (var s = 0, o = n; s < o.length; s++) {
-          for (var h = o[s], c = h.bytes, a = 0; a < i; a++)
-            if (c[a] !== e[t + a])
-              continue e;
-          return h.str;
-        }
+      e: for (var s = 0, o = n; s < o.length; s++) {
+        for (var h = o[s], c = h.bytes, a = 0; a < i; a++)
+          if (c[a] !== e[t + a])
+            continue e;
+        return h.str;
+      }
       return null;
     }, r.prototype.store = function(e, t) {
       var i = this.caches[e.length - 1], n = { bytes: e, str: t };
@@ -676,8 +672,7 @@ var Ie = 16, me = 16, Te = (
   });
 }, M = function(r, e) {
   var t = { label: 0, sent: function() {
-    if (s[0] & 1)
-      throw s[1];
+    if (s[0] & 1) throw s[1];
     return s[1];
   }, trys: [], ops: [] }, i, n, s, o;
   return o = { next: h(0), throw: h(1), return: h(2) }, typeof Symbol == "function" && (o[Symbol.iterator] = function() {
@@ -689,58 +684,53 @@ var Ie = 16, me = 16, Te = (
     };
   }
   function c(a) {
-    if (i)
-      throw new TypeError("Generator is already executing.");
-    for (; o && (o = 0, a[0] && (t = 0)), t; )
-      try {
-        if (i = 1, n && (s = a[0] & 2 ? n.return : a[0] ? n.throw || ((s = n.return) && s.call(n), 0) : n.next) && !(s = s.call(n, a[1])).done)
-          return s;
-        switch (n = 0, s && (a = [a[0] & 2, s.value]), a[0]) {
-          case 0:
-          case 1:
-            s = a;
+    if (i) throw new TypeError("Generator is already executing.");
+    for (; o && (o = 0, a[0] && (t = 0)), t; ) try {
+      if (i = 1, n && (s = a[0] & 2 ? n.return : a[0] ? n.throw || ((s = n.return) && s.call(n), 0) : n.next) && !(s = s.call(n, a[1])).done) return s;
+      switch (n = 0, s && (a = [a[0] & 2, s.value]), a[0]) {
+        case 0:
+        case 1:
+          s = a;
+          break;
+        case 4:
+          return t.label++, { value: a[1], done: !1 };
+        case 5:
+          t.label++, n = a[1], a = [0];
+          continue;
+        case 7:
+          a = t.ops.pop(), t.trys.pop();
+          continue;
+        default:
+          if (s = t.trys, !(s = s.length > 0 && s[s.length - 1]) && (a[0] === 6 || a[0] === 2)) {
+            t = 0;
+            continue;
+          }
+          if (a[0] === 3 && (!s || a[1] > s[0] && a[1] < s[3])) {
+            t.label = a[1];
             break;
-          case 4:
-            return t.label++, { value: a[1], done: !1 };
-          case 5:
-            t.label++, n = a[1], a = [0];
-            continue;
-          case 7:
-            a = t.ops.pop(), t.trys.pop();
-            continue;
-          default:
-            if (s = t.trys, !(s = s.length > 0 && s[s.length - 1]) && (a[0] === 6 || a[0] === 2)) {
-              t = 0;
-              continue;
-            }
-            if (a[0] === 3 && (!s || a[1] > s[0] && a[1] < s[3])) {
-              t.label = a[1];
-              break;
-            }
-            if (a[0] === 6 && t.label < s[1]) {
-              t.label = s[1], s = a;
-              break;
-            }
-            if (s && t.label < s[2]) {
-              t.label = s[2], t.ops.push(a);
-              break;
-            }
-            s[2] && t.ops.pop(), t.trys.pop();
-            continue;
-        }
-        a = e.call(r, t);
-      } catch (f) {
-        a = [6, f], n = 0;
-      } finally {
-        i = s = 0;
+          }
+          if (a[0] === 6 && t.label < s[1]) {
+            t.label = s[1], s = a;
+            break;
+          }
+          if (s && t.label < s[2]) {
+            t.label = s[2], t.ops.push(a);
+            break;
+          }
+          s[2] && t.ops.pop(), t.trys.pop();
+          continue;
       }
-    if (a[0] & 5)
-      throw a[1];
+      a = e.call(r, t);
+    } catch (f) {
+      a = [6, f], n = 0;
+    } finally {
+      i = s = 0;
+    }
+    if (a[0] & 5) throw a[1];
     return { value: a[0] ? a[1] : void 0, done: !0 };
   }
 }, F = function(r) {
-  if (!Symbol.asyncIterator)
-    throw new TypeError("Symbol.asyncIterator is not defined.");
+  if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
   var e = r[Symbol.asyncIterator], t;
   return e ? e.call(r) : (r = typeof __values == "function" ? __values(r) : r[Symbol.iterator](), t = {}, i("next"), i("throw"), i("return"), t[Symbol.asyncIterator] = function() {
     return this;
@@ -760,8 +750,7 @@ var Ie = 16, me = 16, Te = (
 }, I = function(r) {
   return this instanceof I ? (this.v = r, this) : new I(r);
 }, Se = function(r, e, t) {
-  if (!Symbol.asyncIterator)
-    throw new TypeError("Symbol.asyncIterator is not defined.");
+  if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
   var i = t.apply(r, e || []), n, s = [];
   return n = {}, o("next"), o("throw"), o("return"), n[Symbol.asyncIterator] = function() {
     return this;
@@ -850,17 +839,16 @@ var k = RangeError, W = new k("Insufficient data"), Ce = new Te(), Le = (
       var t, i, n, s, o, h, c;
       return Ne(this, void 0, void 0, function() {
         var a, f, l, u, E, g, A, d;
-        return M(this, function(y) {
-          switch (y.label) {
+        return M(this, function(_) {
+          switch (_.label) {
             case 0:
-              a = !1, y.label = 1;
+              a = !1, _.label = 1;
             case 1:
-              y.trys.push([1, 6, 7, 12]), t = !0, i = F(e), y.label = 2;
+              _.trys.push([1, 6, 7, 12]), t = !0, i = F(e), _.label = 2;
             case 2:
               return [4, i.next()];
             case 3:
-              if (n = y.sent(), s = n.done, !!s)
-                return [3, 5];
+              if (n = _.sent(), s = n.done, !!s) return [3, 5];
               c = n.value, t = !1;
               try {
                 if (l = c, a)
@@ -876,22 +864,21 @@ var k = RangeError, W = new k("Insufficient data"), Ce = new Te(), Le = (
               } finally {
                 t = !0;
               }
-              y.label = 4;
+              _.label = 4;
             case 4:
               return [3, 2];
             case 5:
               return [3, 12];
             case 6:
-              return u = y.sent(), o = { error: u }, [3, 12];
+              return u = _.sent(), o = { error: u }, [3, 12];
             case 7:
-              return y.trys.push([7, , 10, 11]), !t && !s && (h = i.return) ? [4, h.call(i)] : [3, 9];
+              return _.trys.push([7, , 10, 11]), !t && !s && (h = i.return) ? [4, h.call(i)] : [3, 9];
             case 8:
-              y.sent(), y.label = 9;
+              _.sent(), _.label = 9;
             case 9:
               return [3, 11];
             case 10:
-              if (o)
-                throw o.error;
+              if (o) throw o.error;
               return [
                 7
                 /*endfinally*/
@@ -927,8 +914,7 @@ var k = RangeError, W = new k("Insufficient data"), Ce = new Te(), Le = (
             case 2:
               return [4, I(h.next())];
             case 3:
-              if (c = d.sent(), u = c.done, !!u)
-                return [3, 14];
+              if (c = d.sent(), u = c.done, !!u) return [3, 14];
               A = c.value, o = !1, d.label = 4;
             case 4:
               if (d.trys.push([4, , 12, 13]), a = A, t && s === 0)
@@ -968,8 +954,7 @@ var k = RangeError, W = new k("Insufficient data"), Ce = new Te(), Le = (
             case 18:
               return [3, 20];
             case 19:
-              if (E)
-                throw E.error;
+              if (E) throw E.error;
               return [
                 7
                 /*endfinally*/
@@ -988,149 +973,148 @@ var k = RangeError, W = new k("Insufficient data"), Ce = new Te(), Le = (
         });
       });
     }, r.prototype.doDecodeSync = function() {
-      e:
-        for (; ; ) {
-          var e = this.readHeadByte(), t = void 0;
-          if (e >= 224)
-            t = e - 256;
-          else if (e < 192)
-            if (e < 128)
-              t = e;
-            else if (e < 144) {
-              var i = e - 128;
-              if (i !== 0) {
-                this.pushMapState(i), this.complete();
-                continue e;
-              } else
-                t = {};
-            } else if (e < 160) {
-              var i = e - 144;
-              if (i !== 0) {
-                this.pushArrayState(i), this.complete();
-                continue e;
-              } else
-                t = [];
-            } else {
-              var n = e - 160;
-              t = this.decodeUtf8String(n, 0);
-            }
-          else if (e === 192)
-            t = null;
-          else if (e === 194)
-            t = !1;
-          else if (e === 195)
-            t = !0;
-          else if (e === 202)
-            t = this.readF32();
-          else if (e === 203)
-            t = this.readF64();
-          else if (e === 204)
-            t = this.readU8();
-          else if (e === 205)
-            t = this.readU16();
-          else if (e === 206)
-            t = this.readU32();
-          else if (e === 207)
-            this.useBigInt64 ? t = this.readU64AsBigInt() : t = this.readU64();
-          else if (e === 208)
-            t = this.readI8();
-          else if (e === 209)
-            t = this.readI16();
-          else if (e === 210)
-            t = this.readI32();
-          else if (e === 211)
-            this.useBigInt64 ? t = this.readI64AsBigInt() : t = this.readI64();
-          else if (e === 217) {
-            var n = this.lookU8();
-            t = this.decodeUtf8String(n, 1);
-          } else if (e === 218) {
-            var n = this.lookU16();
-            t = this.decodeUtf8String(n, 2);
-          } else if (e === 219) {
-            var n = this.lookU32();
-            t = this.decodeUtf8String(n, 4);
-          } else if (e === 220) {
-            var i = this.readU16();
-            if (i !== 0) {
-              this.pushArrayState(i), this.complete();
-              continue e;
-            } else
-              t = [];
-          } else if (e === 221) {
-            var i = this.readU32();
-            if (i !== 0) {
-              this.pushArrayState(i), this.complete();
-              continue e;
-            } else
-              t = [];
-          } else if (e === 222) {
-            var i = this.readU16();
+      e: for (; ; ) {
+        var e = this.readHeadByte(), t = void 0;
+        if (e >= 224)
+          t = e - 256;
+        else if (e < 192)
+          if (e < 128)
+            t = e;
+          else if (e < 144) {
+            var i = e - 128;
             if (i !== 0) {
               this.pushMapState(i), this.complete();
               continue e;
             } else
               t = {};
-          } else if (e === 223) {
-            var i = this.readU32();
+          } else if (e < 160) {
+            var i = e - 144;
             if (i !== 0) {
-              this.pushMapState(i), this.complete();
+              this.pushArrayState(i), this.complete();
               continue e;
             } else
-              t = {};
-          } else if (e === 196) {
-            var i = this.lookU8();
-            t = this.decodeBinary(i, 1);
-          } else if (e === 197) {
-            var i = this.lookU16();
-            t = this.decodeBinary(i, 2);
-          } else if (e === 198) {
-            var i = this.lookU32();
-            t = this.decodeBinary(i, 4);
-          } else if (e === 212)
-            t = this.decodeExtension(1, 0);
-          else if (e === 213)
-            t = this.decodeExtension(2, 0);
-          else if (e === 214)
-            t = this.decodeExtension(4, 0);
-          else if (e === 215)
-            t = this.decodeExtension(8, 0);
-          else if (e === 216)
-            t = this.decodeExtension(16, 0);
-          else if (e === 199) {
-            var i = this.lookU8();
-            t = this.decodeExtension(i, 1);
-          } else if (e === 200) {
-            var i = this.lookU16();
-            t = this.decodeExtension(i, 2);
-          } else if (e === 201) {
-            var i = this.lookU32();
-            t = this.decodeExtension(i, 4);
-          } else
-            throw new U("Unrecognized type byte: ".concat(D(e)));
-          this.complete();
-          for (var s = this.stack; s.length > 0; ) {
-            var o = s[s.length - 1];
-            if (o.type === b)
-              if (o.array[o.position] = t, o.position++, o.position === o.size)
-                s.pop(), t = o.array;
-              else
-                continue e;
-            else if (o.type === S) {
-              if (!De(t))
-                throw new U("The type of key must be string or number but " + typeof t);
-              if (t === "__proto__")
-                throw new U("The key __proto__ is not allowed");
-              o.key = t, o.type = Re;
-              continue e;
-            } else if (o.map[o.key] = t, o.readCount++, o.readCount === o.size)
-              s.pop(), t = o.map;
-            else {
-              o.key = null, o.type = S;
-              continue e;
-            }
+              t = [];
+          } else {
+            var n = e - 160;
+            t = this.decodeUtf8String(n, 0);
           }
-          return t;
+        else if (e === 192)
+          t = null;
+        else if (e === 194)
+          t = !1;
+        else if (e === 195)
+          t = !0;
+        else if (e === 202)
+          t = this.readF32();
+        else if (e === 203)
+          t = this.readF64();
+        else if (e === 204)
+          t = this.readU8();
+        else if (e === 205)
+          t = this.readU16();
+        else if (e === 206)
+          t = this.readU32();
+        else if (e === 207)
+          this.useBigInt64 ? t = this.readU64AsBigInt() : t = this.readU64();
+        else if (e === 208)
+          t = this.readI8();
+        else if (e === 209)
+          t = this.readI16();
+        else if (e === 210)
+          t = this.readI32();
+        else if (e === 211)
+          this.useBigInt64 ? t = this.readI64AsBigInt() : t = this.readI64();
+        else if (e === 217) {
+          var n = this.lookU8();
+          t = this.decodeUtf8String(n, 1);
+        } else if (e === 218) {
+          var n = this.lookU16();
+          t = this.decodeUtf8String(n, 2);
+        } else if (e === 219) {
+          var n = this.lookU32();
+          t = this.decodeUtf8String(n, 4);
+        } else if (e === 220) {
+          var i = this.readU16();
+          if (i !== 0) {
+            this.pushArrayState(i), this.complete();
+            continue e;
+          } else
+            t = [];
+        } else if (e === 221) {
+          var i = this.readU32();
+          if (i !== 0) {
+            this.pushArrayState(i), this.complete();
+            continue e;
+          } else
+            t = [];
+        } else if (e === 222) {
+          var i = this.readU16();
+          if (i !== 0) {
+            this.pushMapState(i), this.complete();
+            continue e;
+          } else
+            t = {};
+        } else if (e === 223) {
+          var i = this.readU32();
+          if (i !== 0) {
+            this.pushMapState(i), this.complete();
+            continue e;
+          } else
+            t = {};
+        } else if (e === 196) {
+          var i = this.lookU8();
+          t = this.decodeBinary(i, 1);
+        } else if (e === 197) {
+          var i = this.lookU16();
+          t = this.decodeBinary(i, 2);
+        } else if (e === 198) {
+          var i = this.lookU32();
+          t = this.decodeBinary(i, 4);
+        } else if (e === 212)
+          t = this.decodeExtension(1, 0);
+        else if (e === 213)
+          t = this.decodeExtension(2, 0);
+        else if (e === 214)
+          t = this.decodeExtension(4, 0);
+        else if (e === 215)
+          t = this.decodeExtension(8, 0);
+        else if (e === 216)
+          t = this.decodeExtension(16, 0);
+        else if (e === 199) {
+          var i = this.lookU8();
+          t = this.decodeExtension(i, 1);
+        } else if (e === 200) {
+          var i = this.lookU16();
+          t = this.decodeExtension(i, 2);
+        } else if (e === 201) {
+          var i = this.lookU32();
+          t = this.decodeExtension(i, 4);
+        } else
+          throw new U("Unrecognized type byte: ".concat(D(e)));
+        this.complete();
+        for (var s = this.stack; s.length > 0; ) {
+          var o = s[s.length - 1];
+          if (o.type === b)
+            if (o.array[o.position] = t, o.position++, o.position === o.size)
+              s.pop(), t = o.array;
+            else
+              continue e;
+          else if (o.type === S) {
+            if (!De(t))
+              throw new U("The type of key must be string or number but " + typeof t);
+            if (t === "__proto__")
+              throw new U("The key __proto__ is not allowed");
+            o.key = t, o.type = Re;
+            continue e;
+          } else if (o.map[o.key] = t, o.readCount++, o.readCount === o.size)
+            s.pop(), t = o.map;
+          else {
+            o.key = null, o.type = S;
+            continue e;
+          }
         }
+        return t;
+      }
     }, r.prototype.readHeadByte = function() {
       return this.headByte === T && (this.headByte = this.readU8()), this.headByte;
     }, r.prototype.complete = function() {
@@ -1256,8 +1240,7 @@ class Be {
   }
   off(e, t) {
     var n, s;
-    if (!this._listeners.has(e))
-      return;
+    if (!this._listeners.has(e)) return;
     const i = ((n = this._listeners.get(e)) == null ? void 0 : n.indexOf(t)) ?? -1;
     i > -1 && ((s = this._listeners.get(e)) == null || s.splice(i, 1));
   }
@@ -1272,7 +1255,7 @@ class Be {
     this._listeners.has(e) && ((i = this._listeners.get(e)) == null || i.forEach((n) => n(t)));
   }
 }
-function _(r) {
+function y(r) {
   console.info("%c u-connect : ", "color: #42AAFF;", r);
 }
 function C(r) {
@@ -1290,7 +1273,7 @@ class ze {
     v(this, "_socket");
     /** The number of reconnect attempts */
     v(this, "_attempts", 0);
-    v(this, "_reconnectPromises");
+    v(this, "_reconnectPromise");
     /** The id of the last task */
     v(this, "_id");
     /** Map of tasks by id */
@@ -1303,24 +1286,20 @@ class ze {
       reconnectDelay: 1e3,
       client: e.client || WebSocket,
       ...e
-    }, this._emitter = new Be(), this._attempts = 0, this._reconnectPromises = [], this._id = 0, this._tasks = /* @__PURE__ */ new Map(), this._state = 0;
+    }, this._emitter = new Be(), this._attempts = 0, this._reconnectPromise = null, this._id = 0, this._tasks = /* @__PURE__ */ new Map(), this._state = 0;
   }
   get state() {
     return this._state;
   }
   set state(e) {
-    this._options.debug && _(`state change from ${B[this._state]} to ${B[e]}`), this._state = e, this._emitter.emit("status", e);
+    this._options.debug && y(`state change from ${B[this._state]} to ${B[e]}`), this._state = e, this._emitter.emit("status", e);
   }
   /**
    * Asynchronously establishes a WebSocket connection and returns a Promise that resolves to the Transport instance.
    * @return {Promise<Transport>} A Promise that resolves to the Transport instance when the connection is established.
    */
   async connect() {
-    if (this.state === 2)
-      return this;
-    this.state = 1;
-    const e = new L();
-    return this._reconnectPromises.push(e), this.createSocket(), e.value();
+    return this.state === 2 ? this : (this.state !== 3 && (this.state = 1), this._reconnectPromise === null && (this._reconnectPromise = new L(), this.createSocket()), this._reconnectPromise.value());
   }
   /**
    * Disconnects the WebSocketTransport if it is not already closed.
@@ -1328,7 +1307,7 @@ class ze {
    */
   async disconnect() {
     if (this.state !== 0)
-      return this._options.debug && _("disconnect"), this.dispose(), Promise.resolve();
+      return this._options.debug && y("disconnect"), this.dispose(), Promise.resolve();
   }
   /**
    * Creates a local namespace with the given service ID and returns remote methods for calling.
@@ -1343,10 +1322,10 @@ class ze {
    * @param {number} attempt - The number of reconnect attempts made so far. Defaults to 0.
    * @return {Promise<void>} A Promise that resolves once the WebSocketTransport is reconnected.
    */
-  async reconnect(e = 0) {
-    this.state === 2 && (this._id = 0, this._tasks.forEach((i) => i.onError(new x(w.UNAVAILABLE, "Transport closed"))), this._tasks.clear(), this.state = 3);
-    const t = typeof this._options.reconnectDelay == "function" ? this._options.reconnectDelay(e) : this._options.reconnectDelay;
-    t !== !1 && (await new Promise((i) => setTimeout(i, t)), this._options.debug && _("connecting attempt №" + e), this.createSocket());
+  async reconnect(e = 0, t) {
+    this.state === 2 && (this._id = 0, this._tasks.forEach((n) => n.onError(new x(w.UNAVAILABLE, "Transport closed"))), this._tasks.clear(), this.state = 3);
+    const i = typeof this._options.reconnectDelay == "function" ? this._options.reconnectDelay(e, t) : this._options.reconnectDelay;
+    i && (await new Promise((n) => setTimeout(n, i)), this._options.debug && y("connecting attempt №" + e), this.createSocket());
   }
   /**
    * Creates the WebSocket instance.
@@ -1354,12 +1333,13 @@ class ze {
    */
   createSocket() {
     var e, t;
-    return ((e = this._socket) == null ? void 0 : e.readyState) !== 0 && ((t = this._socket) == null ? void 0 : t.readyState) !== 1 ? (this._socket = new this._options.client(this._options.url, "u-connect-web"), this._socket.binaryType = "arraybuffer", this._socket.addEventListener("open", () => {
-      this.state = 2, this._attempts = 0, this._reconnectPromises.forEach((i) => i.resolve(this)), this._reconnectPromises = [], this._options.debug && _("connected");
+    return ((e = this._socket) == null ? void 0 : e.readyState) !== 0 && ((t = this._socket) == null ? void 0 : t.readyState) !== 1 ? (this._options.debug && y("create socket"), this._socket = new this._options.client(this._options.url, "u-connect-web"), this._socket.binaryType = "arraybuffer", this._socket.addEventListener("open", () => {
+      var i;
+      this.state = 2, this._attempts = 0, (i = this._reconnectPromise) == null || i.resolve(this), this._reconnectPromise = null, this._options.debug && y("connected");
     }), this._socket.addEventListener("error", (i) => {
-      this._options.debug && _(i);
+      this._options.debug && y(i);
     }), this._socket.addEventListener("close", (i) => {
-      this._state !== 0 && this.reconnect(this._attempts++);
+      this._state !== 0 && this.reconnect(this._attempts++, i);
     }), this._socket.addEventListener("message", (i) => this.onMessage(this.deserialize(i.data))), !0) : !1;
   }
   /**
@@ -1368,8 +1348,8 @@ class ze {
    * @return {Promise<void>} A Promise that resolves once the disposal is complete.
    */
   dispose() {
-    var e;
-    this.state !== 0 && (this._id = 0, this.state = 0, this._tasks.forEach((t) => t.onError(new x(w.UNAVAILABLE, "Transport closed"))), this._tasks.clear(), this._reconnectPromises.forEach((t) => t.reject(new x(w.UNAVAILABLE, "Transport closed"))), this._reconnectPromises = [], (e = this._socket) == null || e.close());
+    var e, t;
+    this.state !== 0 && (this._id = 0, this.state = 0, this._tasks.forEach((i) => i.onError(new x(w.UNAVAILABLE, "Transport closed"))), this._tasks.clear(), (e = this._reconnectPromise) == null || e.reject(new x(w.UNAVAILABLE, "Transport closed")), this._reconnectPromise = null, (t = this._socket) == null || t.close());
   }
   /**
    * Serializes and sends a message over the WebSocket connection.
@@ -1377,7 +1357,7 @@ class ze {
    * @param {ServiceMethodOptions} [options] - The options for the message.
    */
   send(e, t) {
-    this._options.debug && _("send data " + e.method), this._socket.send(this.serialize(e, t));
+    this._options.debug && y("send data " + e.method), this._socket.send(this.serialize(e, t));
   }
   /**
    * The last step in serializes a TransportPackageClient object and returns the serialized data.
@@ -1444,23 +1424,23 @@ class ze {
     const t = this._tasks.get(e.id);
     switch (e.type) {
       case p.UNARY_CLIENT: {
-        t && (this._options.debug && _(
+        t && (this._options.debug && y(
           `unary responce ${e.method} ${e.status}(${w[e.status]}) ${e.error ? "error message: " + e.error : "success"}`
         ), this._tasks.delete(e.id), e.error ? t.onError(new x(e.status ?? w.INTERNAL, e.error)) : t.onEnd(e));
         break;
       }
       case p.STREAM_CLIENT:
       case p.STREAM_SERVER:
-        t && (this._options.debug && _("stream data " + e.method), (i = t.onMessage) == null || i.call(t, e));
+        t && (this._options.debug && y("stream data " + e.method), (i = t.onMessage) == null || i.call(t, e));
         break;
       case p.STREAM_END: {
-        t && (this._options.debug && _(
+        t && (this._options.debug && y(
           `stream end ${e.method} ${e.status}(${w[e.status]}) ${e.error ? "error message: " + e.error : "success"}`
         ), e.error ? t.onError(new x(e.status ?? w.INTERNAL, e.error)) : t.onEnd(e), this._tasks.delete(e.id));
         break;
       }
       case p.ABORT: {
-        this._options.debug && _(`abort request ${e.method}`), t && t.onError(new x(e.status ?? w.ABORTED, e.error ?? "Request aborted"));
+        this._options.debug && y(`abort request ${e.method}`), t && t.onError(new x(e.status ?? w.ABORTED, e.error ?? "Request aborted"));
         break;
       }
       case p.CONNECT:
