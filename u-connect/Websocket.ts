@@ -86,9 +86,9 @@ export interface UConnectClientOptions {
   debug?: boolean;
 
   /**
-   * reconnect delay in ms (default: 1000) or 0 to disable
+   * reconnect delay in ms (default: 1000) or false to disable
    */
-  reconnectDelay?: number | ((reconnects: number, e: IClientCloseEvent) => number);
+  reconnectDelay?: number | false | ((reconnects: number, e: IClientCloseEvent) => number | false);
 
   /**
    * custom client for websocket connection (default: WebSocket browser API)
@@ -128,6 +128,8 @@ export class UConnectClient implements IUConnectClient {
     return this._state;
   }
   private set state(state: TransportState) {
+    if (this._state === state) return;
+
     if (this._options.debug) debugWrite(`state change from ${TransportState[this._state]} to ${TransportState[state]}`);
 
     this._state = state;
@@ -200,10 +202,9 @@ export class UConnectClient implements IUConnectClient {
 
       this.state = TransportState.RECONNECTING;
     }
-
     const delay =
       typeof this._options.reconnectDelay === "function" ? this._options.reconnectDelay(attempt, e) : this._options.reconnectDelay;
-    if (!delay) return;
+    if (delay === false) return;
 
     await new Promise((resolve) => setTimeout(resolve, delay));
 

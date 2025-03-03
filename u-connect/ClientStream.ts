@@ -20,7 +20,7 @@ export class ClientStream<I, O, M = string> implements IClientStream<I, O, M> {
   }
 
   async send(data: I): Promise<void> {
-    if (this._result.has()) return Promise.reject();
+    if (this._result.has()) return Promise.reject("u-connect-client-ts: client stream error");
 
     this._next = new PromiseValue();
     this._transport.send({ id: this.id, type: DataType.STREAM_CLIENT, method: this.method as any, request: data });
