@@ -14,6 +14,7 @@ export class PromiseValue<T> {
   private _error?: Error;
   private _resolve?: (value: T) => void;
   private _reject?: (error: Error) => void;
+  private _task?: Promise<T>;
 
   /**
    * Check if the PromiseValue has a stored value or error.
@@ -44,12 +45,18 @@ export class PromiseValue<T> {
    * @return {Promise<T>} A Promise that resolves with the value or rejects with the error.
    */
   value(): Promise<T> {
+    // If the PromiseValue has a stored value or error, return it.
     if (this._value) return Promise.resolve(this._value);
     if (this._error) return Promise.reject(this._error);
-    return new Promise((resolve, reject) => {
-      this._resolve = resolve;
-      this._reject = reject;
-    });
+
+    // If the PromiseValue does not have task yet, create it.
+    if (!this._task)
+      this._task = new Promise((resolve, reject) => {
+        this._resolve = resolve;
+        this._reject = reject;
+      });
+
+    return this._task;
   }
 
   /**

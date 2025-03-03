@@ -59,7 +59,6 @@ import { ref, shallowRef } from "vue";
 import { tryOnMounted } from "@vueuse/core";
 
 import { MethodError, Status, TransportState } from "../u-connect";
-// import { decode, encode } from "@msgpack/msgpack";
 import USection from "./components/uSection.vue";
 import UFormUnary from "./components/uFormUnary.vue";
 import UFormStream from "./components/uFormStream.vue";
@@ -82,7 +81,7 @@ const transport = new UConnectClient({
   debug: true,
   reconnectDelay(reconnects) {
     console.log(`reconnecting ${reconnects}`);
-    return 1000 * reconnects;
+    return 1000 * reconnects + 1;
   }
 });
 

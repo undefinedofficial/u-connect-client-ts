@@ -8,13 +8,6 @@ export declare class ClientService<S extends Record<string, any>> implements ISe
     duplex<K extends keyof S>(method: K, options?: ServiceMethodOptions): ReturnType<S[K]> extends IDuplexStream<any, any> ? ReturnType<S[K]> : void;
 }
 
-/**
- * @u-connect/client-ts v1.0.0
- * https://github.com/undefinedofficial/u-connect-client-ts.git
- *
- * Copyright (c) 2024 https://github.com/undefinedofficial
- * Released under the MIT license
- */
 declare const enum DataType {
     /** Received */
     CONNECT = 1,
@@ -52,10 +45,7 @@ export declare interface IClient {
     readonly readyState: number;
     binaryType: "arraybuffer" | string;
     addEventListener(event: "open", listener: () => void): void;
-    addEventListener(event: "close", listener: (e: {
-        code: number;
-        reason: string;
-    }) => void): void;
+    addEventListener(event: "close", listener: (e: IClientCloseEvent) => void): void;
     addEventListener(event: "error", listener: (e: Error) => void): void;
     addEventListener(event: "message", listener: (message: {
         data: string;
@@ -63,6 +53,12 @@ export declare interface IClient {
     send(message: string): void;
     close(): void;
     new (url: string | URL, protocol: string): IClient;
+}
+
+export declare interface IClientCloseEvent {
+    readonly code: number;
+    readonly reason: string;
+    readonly wasClean: boolean;
 }
 
 /**
@@ -316,7 +312,7 @@ export declare class UConnectClient implements IUConnectClient {
     private _socket;
     /** The number of reconnect attempts */
     private _attempts;
-    private _reconnectPromises;
+    private _reconnectPromise;
     /** The id of the last task */
     private _id;
     /** Map of tasks by id */
@@ -418,7 +414,7 @@ export declare interface UConnectClientOptions {
     /**
      * reconnect delay in ms (default: 1000) or false to disable
      */
-    reconnectDelay?: number | ((reconnects: number) => number) | false;
+    reconnectDelay?: number | false | ((reconnects: number, e: IClientCloseEvent) => number | false);
     /**
      * custom client for websocket connection (default: WebSocket browser API)
      */

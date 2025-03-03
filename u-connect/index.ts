@@ -6,8 +6,8 @@
  * Released under the MIT license
  */
 
-export * from "./service";
-export * from "./websocket";
-export * from "./exceptions";
-export * from "./status";
+export * from "./Service";
+export * from "./Websocket";
+export * from "./Exceptions";
+export * from "./Status";
 export type { UnaryResponse, IClientStream, IServerStream, IDuplexStream } from "./DataType";

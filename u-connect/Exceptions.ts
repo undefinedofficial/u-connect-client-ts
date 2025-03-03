@@ -6,7 +6,7 @@
  * Released under the MIT license
  */
 
-import type { Status } from "./status";
+import type { Status } from "./Status";
 
 export class MethodError extends Error {
   constructor(public status: Status, message: string) {

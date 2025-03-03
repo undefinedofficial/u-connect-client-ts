@@ -8,9 +8,9 @@
 
 import { decode, encode } from "@msgpack/msgpack";
 import type { PackageClient, PackageServer, ServicePath } from "./DataType";
-import { ClientService, type IService, type ServiceMethodOptions } from "./service";
-import { MethodError } from "./exceptions";
-import { Status } from "./status";
+import { ClientService, type IService, type ServiceMethodOptions } from "./Service";
+import { MethodError } from "./Exceptions";
+import { Status } from "./Status";
 import { DataType } from "./DataType";
 import { EventEmitter, PromiseValue } from "./utils/index";
 
@@ -33,11 +33,17 @@ interface UConnectClientEventMap {
   status: TransportState;
 }
 
+export interface IClientCloseEvent {
+  readonly code: number;
+  readonly reason: string;
+  readonly wasClean: boolean;
+}
+
 export interface IClient {
   readonly readyState: number;
   binaryType: "arraybuffer" | string;
   addEventListener(event: "open", listener: () => void): void;
-  addEventListener(event: "close", listener: (e: { code: number; reason: string }) => void): void;
+  addEventListener(event: "close", listener: (e: IClientCloseEvent) => void): void;
   addEventListener(event: "error", listener: (e: Error) => void): void;
   addEventListener(event: "message", listener: (message: { data: string }) => void): void;
   send(message: string): void;
@@ -82,7 +88,7 @@ export interface UConnectClientOptions {
   /**
    * reconnect delay in ms (default: 1000) or false to disable
    */
-  reconnectDelay?: number | ((reconnects: number) => number) | false;
+  reconnectDelay?: number | false | ((reconnects: number, e: IClientCloseEvent) => number | false);
 
   /**
    * custom client for websocket connection (default: WebSocket browser API)
@@ -108,7 +114,7 @@ export class UConnectClient implements IUConnectClient {
   /** The number of reconnect attempts */
   private _attempts = 0;
 
-  private _reconnectPromises: PromiseValue<IUConnectClient>[];
+  private _reconnectPromise: PromiseValue<IUConnectClient> | null;
 
   /** The id of the last task */
   private _id: number;
@@ -122,6 +128,8 @@ export class UConnectClient implements IUConnectClient {
     return this._state;
   }
   private set state(state: TransportState) {
+    if (this._state === state) return;
+
     if (this._options.debug) debugWrite(`state change from ${TransportState[this._state]} to ${TransportState[state]}`);
 
     this._state = state;
@@ -139,7 +147,7 @@ export class UConnectClient implements IUConnectClient {
     };
     this._emitter = new EventEmitter();
     this._attempts = 0;
-    this._reconnectPromises = [];
+    this._reconnectPromise = null;
     this._id = 0;
     this._tasks = new Map();
     this._state = TransportState.CLOSED;
@@ -151,13 +159,13 @@ export class UConnectClient implements IUConnectClient {
   async connect(): Promise<IUConnectClient> {
     if (this.state === TransportState.OPEN) return this;
 
-    this.state = TransportState.CONNECTING;
+    if (this.state !== TransportState.RECONNECTING) this.state = TransportState.CONNECTING;
 
-    const reconnectPromise = new PromiseValue<IUConnectClient>();
-    this._reconnectPromises.push(reconnectPromise);
-
-    this.createSocket();
-    return reconnectPromise.value();
+    if (this._reconnectPromise === null) {
+      this._reconnectPromise = new PromiseValue<IUConnectClient>();
+      this.createSocket();
+    }
+    return this._reconnectPromise.value();
   }
 
   /**
@@ -186,7 +194,7 @@ export class UConnectClient implements IUConnectClient {
    * @param {number} attempt - The number of reconnect attempts made so far. Defaults to 0.
    * @return {Promise<void>} A Promise that resolves once the WebSocketTransport is reconnected.
    */
-  private async reconnect(attempt: number = 0): Promise<void> {
+  private async reconnect(attempt: number = 0, e: IClientCloseEvent): Promise<void> {
     if (this.state === TransportState.OPEN) {
       this._id = 0;
       this._tasks.forEach((task) => task.onError(new MethodError(Status.UNAVAILABLE, "Transport closed")));
@@ -194,8 +202,8 @@ export class UConnectClient implements IUConnectClient {
 
       this.state = TransportState.RECONNECTING;
     }
-
-    const delay = typeof this._options.reconnectDelay === "function" ? this._options.reconnectDelay(attempt) : this._options.reconnectDelay;
+    const delay =
+      typeof this._options.reconnectDelay === "function" ? this._options.reconnectDelay(attempt, e) : this._options.reconnectDelay;
     if (delay === false) return;
 
     await new Promise((resolve) => setTimeout(resolve, delay));
@@ -210,6 +218,8 @@ export class UConnectClient implements IUConnectClient {
    */
   private createSocket() {
     if (this._socket?.readyState !== 0 && this._socket?.readyState !== 1) {
+      if (this._options.debug) debugWrite("create socket");
+
       this._socket = new this._options.client(this._options.url, "u-connect-web");
       this._socket.binaryType = "arraybuffer";
 
@@ -219,8 +229,8 @@ export class UConnectClient implements IUConnectClient {
       this._socket.addEventListener("open", () => {
         this.state = TransportState.OPEN;
         this._attempts = 0;
-        this._reconnectPromises.forEach((p) => p.resolve(this));
-        this._reconnectPromises = [];
+        this._reconnectPromise?.resolve(this);
+        this._reconnectPromise = null;
         if (this._options.debug) debugWrite("connected");
       });
 
@@ -236,7 +246,7 @@ export class UConnectClient implements IUConnectClient {
          * If the state is CLOSED client will not attempt to reconnect (set the state to CLOSE can be called from dispose method).
          */
         if (this._state === TransportState.CLOSED) return;
-        this.reconnect(this._attempts++);
+        this.reconnect(this._attempts++, e);
       });
 
       /**
@@ -263,8 +273,8 @@ export class UConnectClient implements IUConnectClient {
     this._tasks.forEach((stream) => stream.onError(new MethodError(Status.UNAVAILABLE, "Transport closed")));
     this._tasks.clear();
 
-    this._reconnectPromises.forEach((p) => p.reject(new MethodError(Status.UNAVAILABLE, "Transport closed")));
-    this._reconnectPromises = [];
+    this._reconnectPromise?.reject(new MethodError(Status.UNAVAILABLE, "Transport closed"));
+    this._reconnectPromise = null;
 
     this._socket?.close();
   }
