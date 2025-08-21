@@ -6,13 +6,14 @@
  * Released under the MIT license
  */
 
-import type { UConnectClient } from "./Websocket";
+import type { UConnectClient } from "./IUConnectClient";
 import type { IClientStream, IDuplexStream, IServerStream, RequestMeta, ServiceMethod, ServicePath, UnaryResponse } from "./DataType";
 import { ServerStream } from "./ServerStream";
 import { ClientStream } from "./ClientStream";
 import { MethodError } from "./Exceptions";
 import { DataType } from "./DataType";
 import { Status } from "./Status";
+import type { IUniqueIdProvider } from "./IUniqueIdProvider";
 
 /**
  * Request options
@@ -56,7 +57,7 @@ export type IService<S extends Record<string, (...request: any) => any>> = {
 };
 
 export class ClientService<S extends Record<string, any>> implements IService<S> {
-  constructor(private _transport: UConnectClient, private _service: ServicePath) {}
+  constructor(private _transport: UConnectClient, private _service: ServicePath, private _idProvider: IUniqueIdProvider) {}
 
   unary<K extends keyof S>(
     method: K,
@@ -65,7 +66,13 @@ export class ClientService<S extends Record<string, any>> implements IService<S>
   ): ReturnType<S[K]> extends UnaryResponse<any> ? Promise<ReturnType<S[K]>> : void {
     return this._transport
       .sendRequest<Parameters<S[K]>[0], UnaryResponse<any>, string>(
-        { id: this._transport.reservateId(), method: `${this._service}.${method as string}`, type: DataType.UNARY_CLIENT, request },
+        {
+          id: this._idProvider.getId(),
+          method: `${this._service}.${method as string}`,
+          type: DataType.UNARY_CLIENT,
+          request,
+          meta: options?.meta
+        },
         options
       )
       .then((res) => ({
@@ -80,19 +87,17 @@ export class ClientService<S extends Record<string, any>> implements IService<S>
     method: K,
     options?: ServiceMethodOptions
   ): ReturnType<S[K]> extends IClientStream<any, any, any> ? ReturnType<S[K]> : void {
-    const id = this._transport.reservateId();
+    const id = this._idProvider.getId();
     const fullMethod = `${this._service}.${method as string}` as ServiceMethod<string, string>;
     const clientStream = new ClientStream<any, any, string>(this._transport, id, fullMethod);
 
     this._transport
       .sendRequest<null | undefined, any, string>(
-        { id, method: `${this._service}.${method as string}`, type: DataType.STREAM_CLIENT, request: null },
+        { id, method: `${this._service}.${method as string}`, type: DataType.STREAM_CLIENT, request: null, meta: options?.meta },
         options,
         (data) => {
-          if (data.type === DataType.STREAM_CLIENT) {
-            clientStream.next();
-            return;
-          }
+          if (data.type === DataType.STREAM_CLIENT) return clientStream.next();
+
           clientStream.error(new MethodError(Status.INTERNAL, "Internal server error"));
         }
       )
@@ -117,7 +122,13 @@ export class ClientService<S extends Record<string, any>> implements IService<S>
 
     this._transport
       .sendRequest<Parameters<S[K]>[0], null | undefined, string>(
-        { id: this._transport.reservateId(), type: DataType.STREAM_SERVER, method: `${this._service}.${method as string}`, request },
+        {
+          id: this._idProvider.getId(),
+          type: DataType.STREAM_SERVER,
+          method: `${this._service}.${method as string}`,
+          request,
+          meta: options?.meta
+        },
         options,
         (data) => {
           if (data.type === DataType.STREAM_SERVER) return stream.InvokeMessage?.(data.response);
@@ -133,7 +144,7 @@ export class ClientService<S extends Record<string, any>> implements IService<S>
     method: K,
     options?: ServiceMethodOptions
   ): ReturnType<S[K]> extends IDuplexStream<any, any> ? ReturnType<S[K]> : void {
-    const id = this._transport.reservateId();
+    const id = this._idProvider.getId();
     const fullMethod = `${this._service}.${method as string}` as any;
     const clientStream = new ClientStream<any, any, K>(this._transport, id, fullMethod);
     const serverStream = new ServerStream<any, K>();
@@ -157,17 +168,19 @@ export class ClientService<S extends Record<string, any>> implements IService<S>
     } as ReturnType<S[K]> & void;
 
     this._transport
-      .sendRequest<null | undefined, any, string>({ id, method: fullMethod, type: DataType.STREAM_DUPLEX }, options, (data) => {
-        if (data.type === DataType.STREAM_CLIENT) {
-          clientStream.next();
-          return;
-        }
-        if (data.type === DataType.STREAM_SERVER) return serverStream.InvokeMessage?.(data.response);
+      .sendRequest<null | undefined, any, string>(
+        { id, method: fullMethod, type: DataType.STREAM_DUPLEX, meta: options?.meta },
+        options,
+        (data) => {
+          if (data.type === DataType.STREAM_CLIENT) return clientStream.next();
 
-        const e = new MethodError(Status.INTERNAL, "Internal server error");
-        clientStream.error(e);
-        serverStream.InvokeError?.(e);
-      })
+          if (data.type === DataType.STREAM_SERVER) return serverStream.InvokeMessage?.(data.response);
+
+          const e = new MethodError(Status.INTERNAL, "Internal server error");
+          clientStream.error(e);
+          serverStream.InvokeError?.(e);
+        }
+      )
       .then((res) => {
         const r = {
           method: res.method as any,

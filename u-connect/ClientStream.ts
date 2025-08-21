@@ -8,19 +8,21 @@
 
 import type { IClientStream, ServerResponse } from "./DataType";
 import { DataType } from "./DataType";
-import { PromiseValue } from "./utils/PromiceValue";
-import type { UConnectClient } from "./Websocket";
+import { PromiseValue } from "./PromiceValue";
+import type { UConnectClient } from "./IUConnectClient";
 
 export class ClientStream<I, O, M = string> implements IClientStream<I, O, M> {
   private _result: PromiseValue<ServerResponse<O, M>>;
   private _next?: PromiseValue<void>;
 
-  constructor(private _transport: UConnectClient, private readonly id: number, private readonly method: M) {
+  constructor(private readonly _transport: UConnectClient, private readonly id: string, private readonly method: M) {
     this._result = new PromiseValue();
+    this._next = new PromiseValue();
   }
 
   async send(data: I): Promise<void> {
     if (this._result.has()) return Promise.reject("u-connect-client-ts: client stream error");
+    if (this._next?.has()) await this._next.value();
 
     this._next = new PromiseValue();
     this._transport.send({ id: this.id, type: DataType.STREAM_CLIENT, method: this.method as any, request: data });

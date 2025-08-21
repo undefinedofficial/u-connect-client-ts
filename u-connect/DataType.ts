@@ -100,18 +100,17 @@ export interface IServerStream<O, M = string> {
  */
 export interface IDuplexStream<I, O, M = string> extends IClientStream<I, O, M>, IServerStream<O, M> {}
 
-type KeyOfType = keyof Record<string, any>;
-
-interface IPackage<S extends ServicePath, D extends KeyOfType> {
-  id: number;
+interface IPackage<S extends ServicePath, D extends string> {
+  id: string;
   type: DataType;
   method: ServiceMethod<S, D>;
 }
 
-export interface PackageClient<S extends ServicePath, D extends KeyOfType, P> extends IPackage<S, D> {
+export interface PackageClient<S extends ServicePath, D extends string, P> extends IPackage<S, D> {
   request?: P;
+  meta?: ResponseMeta | null;
 }
-export interface PackageServer<S extends ServicePath, D extends KeyOfType, P> extends IPackage<S, D> {
+export interface PackageServer<S extends ServicePath, D extends string, P> extends IPackage<S, D> {
   response?: P | null;
   status?: Status;
   meta?: ResponseMeta | null;

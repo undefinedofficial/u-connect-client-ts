@@ -7,7 +7,11 @@
  */
 
 export * from "./Service";
-export * from "./Websocket";
+export * from "./IUConnectClient";
 export * from "./Exceptions";
 export * from "./Status";
-export type { UnaryResponse, IClientStream, IServerStream, IDuplexStream } from "./DataType";
+export type { UnaryResponse, IClientStream, IServerStream, IDuplexStream, RequestMeta, ResponseMeta } from "./DataType";
+export * from "./IConnection";
+export * from "./ISerializer";
+export * from "./IUniqueIdProvider";
+export * from "./ILogger";

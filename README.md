@@ -1,6 +1,6 @@
 # u-connect/client-ts
 
-<img  width="480px" src="https://raw.githubusercontent.com/undefinedofficial/u-connect-client-ts/main/u-connect-logo.jpg">
+<img width="480px" src="https://raw.githubusercontent.com/undefinedofficial/u-connect-client-ts/main/u-connect-logo.jpg">
 
 u-connect - это современная высокопроизводительная платформа удаленного вызова процедур с открытым исходным кодом.
 Она позволяет эффективно создавать и подключать сервисы для обмена данными между ними.
@@ -28,19 +28,23 @@ pnpm install https://github.com/undefinedofficial/u-connect-client-ts.git
 
 ### UConnectClient
 
-Перед взаимодействием с сервером необходимо создать экземпляр клиента.
+Перед взаимодействием с сервером необходимо создать экземпляр канала подключения и RPC-клиента.
 
 ```ts
-const client = new UConnectClient({
+// Создание клиента и подключение
+const connection = new WebSocketConnection({
   url: "url", // url подключения к u-connect серверу.
-  debug: true, // вывод полезной информации для отладки в консоль.
   // задержка при переподключении (false для отключения или число для статической задержки)
   reconnectDelay(reconnects) {
     console.log(`reconnecting ${reconnects}`);
     return 1000 * reconnects;
   }
-  // По умолчанию используется WebSocket WebApi, вы можете использовать WebSocket из модуля "ws" для использования на Node.js
+  // По умолчанию используется WebSocket WebApi, вы можете использовать WebSocket из модуля  "ws" для использования на Node.js
   // client: WebSocket
+});
+const client = new UConnectClient({
+  connection,
+  logger: new ConsoleLogger() // вывод полезной информации для отладки в консоль.
 });
 ```
 
