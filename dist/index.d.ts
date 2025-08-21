@@ -1,11 +1,28 @@
 export declare class ClientService<S extends Record<string, any>> implements IService<S> {
     private _transport;
     private _service;
-    constructor(_transport: UConnectClient, _service: ServicePath);
+    private _idProvider;
+    constructor(_transport: UConnectClient, _service: ServicePath, _idProvider: IUniqueIdProvider);
     unary<K extends keyof S>(method: K, request: Parameters<S[K]>[0], options?: ServiceMethodOptions): ReturnType<S[K]> extends UnaryResponse<any> ? Promise<ReturnType<S[K]>> : void;
     clientStream<K extends keyof S>(method: K, options?: ServiceMethodOptions): ReturnType<S[K]> extends IClientStream<any, any, any> ? ReturnType<S[K]> : void;
     serverStream<K extends keyof S>(method: K, request: Parameters<S[K]>[0], options?: ServiceMethodOptions): ReturnType<S[K]> extends IServerStream<any, any> ? ReturnType<S[K]> : void;
     duplex<K extends keyof S>(method: K, options?: ServiceMethodOptions): ReturnType<S[K]> extends IDuplexStream<any, any> ? ReturnType<S[K]> : void;
+}
+
+/**
+ * WebSocketTransport connection state
+ */
+export declare enum ConnectionState {
+    CLOSED = 0,
+    CONNECTING = 1,
+    OPEN = 2,
+    RECONNECTING = 3
+}
+
+export declare class ConsoleLogger implements ILogger {
+    error(...args: any[]): void;
+    warn(...args: any[]): void;
+    info(...args: any[]): void;
 }
 
 declare const enum DataType {
@@ -69,16 +86,57 @@ export declare interface IClientStream<I, O, M = string> {
     complete(): Promise<ServerResponse<O, M>>;
 }
 
+export declare interface IConnection {
+    state: ConnectionState;
+    connect(): Promise<IConnection>;
+    send(message: any): Promise<void>;
+    close(): void;
+    addEventListener(event: "open", listener: () => void): void;
+    addEventListener(event: "close", listener: () => void): void;
+    addEventListener(event: "error", listener: (e: Error) => void): void;
+    addEventListener(event: "message", listener: (data: any) => void): void;
+    addEventListener(event: "status", listener: (status: ConnectionState) => void): void;
+    removeEventListener(event: "open", listener: () => void): void;
+    removeEventListener(event: "close", listener: () => void): void;
+    removeEventListener(event: "error", listener: (e: Error) => void): void;
+    removeEventListener(event: "message", listener: (data: any) => void): void;
+    removeEventListener(event: "status", listener: (status: ConnectionState) => void): void;
+}
+
 /**
  * Duplex request from client, duplex response from server
  */
 export declare interface IDuplexStream<I, O, M = string> extends IClientStream<I, O, M>, IServerStream<O, M> {
 }
 
-declare interface IPackage<S extends ServicePath, D extends KeyOfType> {
-    id: number;
+export declare interface ILogger {
+    error(...args: any[]): void;
+    warn(...args: any[]): void;
+    info(...args: any[]): void;
+}
+
+declare interface IPackage<S extends ServicePath, D extends string> {
+    id: string;
     type: DataType;
     method: ServiceMethod<S, D>;
+}
+
+/**
+ * Interface for serializing and deserializing data
+ */
+export declare interface ISerializer {
+    /**
+     * Serializes data to a format suitable for transport
+     * @param data Data to serialize
+     * @returns Serialized data
+     */
+    serialize<TPayload>(data: PackageClient<ServicePath, string, TPayload>): any;
+    /**
+     * Deserializes data from transport format
+     * @param data Serialized data to deserialize
+     * @returns Deserialized data
+     */
+    deserialize<TPayload>(data: any): PackageServer<ServicePath, string, TPayload>;
 }
 
 /**
@@ -103,27 +161,56 @@ export declare interface IUConnectClient {
     service<S extends Record<string, any>>(id: ServicePath): IService<S>;
 }
 
-declare type KeyOfType = keyof Record<string, any>;
+export declare interface IUniqueIdProvider {
+    /**
+     * Generates a unique ID for the task.
+     * @return {number} The unique ID.
+     */
+    getId(): string;
+}
+
+/**
+ * Default MessagePack serializer implementation
+ */
+export declare class MessagePackSerializer implements ISerializer {
+    serialize<TPayload>({ id, method, type, request, meta }: PackageClient<ServicePath, string, TPayload>): any;
+    deserialize<TPayload>(message: any): PackageServer<string, string, TPayload>;
+}
 
 export declare class MethodError extends Error {
     status: Status;
     constructor(status: Status, message: string);
 }
 
-declare interface PackageClient<S extends ServicePath, D extends KeyOfType, P> extends IPackage<S, D> {
-    request?: P;
+/**
+ * Provides a unique ID by incrementing an internal counter.
+ */
+export declare class NextIdProvider implements IUniqueIdProvider {
+    /** The id of the last task */
+    private _id;
+    constructor();
+    /**
+     * Generates a unique ID for the task.
+     * @return {number} The unique ID.
+     */
+    getId(): string;
 }
 
-declare interface PackageServer<S extends ServicePath, D extends KeyOfType, P> extends IPackage<S, D> {
+declare interface PackageClient<S extends ServicePath, D extends string, P> extends IPackage<S, D> {
+    request?: P;
+    meta?: ResponseMeta | null;
+}
+
+declare interface PackageServer<S extends ServicePath, D extends string, P> extends IPackage<S, D> {
     response?: P | null;
     status?: Status;
     meta?: ResponseMeta | null;
     error?: TransportError | null;
 }
 
-declare type RequestMeta<T = Record<string, string>> = T;
+export declare type RequestMeta<T = Record<string, string>> = T;
 
-declare type ResponseMeta<T = Record<string, string>> = Readonly<T>;
+export declare type ResponseMeta<T = Record<string, string>> = Readonly<T>;
 
 declare interface ServerResponse<O, M> {
     method: M;
@@ -295,32 +382,13 @@ export declare enum Status {
 
 declare type TransportError = string;
 
-/**
- * WebSocketTransport connection state
- */
-export declare enum TransportState {
-    CLOSED = 0,
-    CONNECTING = 1,
-    OPEN = 2,
-    RECONNECTING = 3
-}
-
 export declare class UConnectClient implements IUConnectClient {
     private readonly _options;
-    private readonly _emitter;
-    /** The websocket instance */
-    private _socket;
-    /** The number of reconnect attempts */
-    private _attempts;
-    private _reconnectPromise;
-    /** The id of the last task */
-    private _id;
+    /** The connection instance */
+    private readonly _socket;
     /** Map of tasks by id */
-    private _tasks;
-    /** Current state of the connection */
-    private _state;
-    get state(): TransportState;
-    private set state(value);
+    private readonly _tasks;
+    get state(): ConnectionState;
     constructor(options: UConnectClientOptions);
     /**
      * Asynchronously establishes a WebSocket connection and returns a Promise that resolves to the Transport instance.
@@ -339,18 +407,7 @@ export declare class UConnectClient implements IUConnectClient {
      */
     service<S extends Record<string, any>>(id: ServicePath): IService<S>;
     /**
-     * Reconnects the WebSocketTransport if it is disconnected state.
-     * @param {number} attempt - The number of reconnect attempts made so far. Defaults to 0.
-     * @return {Promise<void>} A Promise that resolves once the WebSocketTransport is reconnected.
-     */
-    private reconnect;
-    /**
-     * Creates the WebSocket instance.
-     * @returns true if the socket new created else false the socket already exists or created.
-     */
-    private createSocket;
-    /**
-     * Dispose the WebSocketTransport by closing the tasks and socket if the state is not CLOSED.
+     * Disposed of all tasks if the state is CLOSED.
      *
      * @return {Promise<void>} A Promise that resolves once the disposal is complete.
      */
@@ -358,24 +415,8 @@ export declare class UConnectClient implements IUConnectClient {
     /**
      * Serializes and sends a message over the WebSocket connection.
      * @param {PackageClient<string, string, I>} message - The message to send.
-     * @param {ServiceMethodOptions} [options] - The options for the message.
      */
-    send<I>(message: PackageClient<string, string, I>, options?: ServiceMethodOptions): void;
-    /**
-     * The last step in serializes a TransportPackageClient object and returns the serialized data.
-     *
-     * @param {PackageClient<any, any, P>} options - The TransportPackageClient object to serialize.
-     * @param {TransportServiceOptions} [options] - The options for the message.
-     * @returns {any} - The serialized data.
-     */
-    private serialize;
-    /**
-     * The first step in deserializes a message received over connection and returns a TransportPackageServer object.
-     *
-     * @param {any} message - The message to be deserialized.
-     * @return {PackageServer<any, any, P>} - The deserialized TransportPackageServer object.
-     */
-    private deserialize;
+    send<I>(message: PackageClient<string, string, I>): Promise<void>;
     /**
      * Sends a message to the server and waits for a response and kills the task.
      * @param message The message to send.
@@ -383,42 +424,42 @@ export declare class UConnectClient implements IUConnectClient {
      */
     sendRequest<I, O, M extends keyof Record<string, any>>(message: PackageClient<any, string, I>, options?: ServiceMethodOptions, onMessage?: (data: PackageServer<ServicePath, string, O>) => void): Promise<PackageServer<ServicePath, M, O>>;
     /**
-     * Generates a unique ID for the task.
-     * @return {number} The unique ID.
-     */
-    reservateId(): number;
-    /**
      * Handles incoming messages from the WebSocket server.
      * @param {PackageServer<any, string, any>} message - The message received from the server.
      * @return {Promise<void>} A promise that resolves when the message is handled.
      */
     private onMessage;
-    on<K extends keyof UConnectClientEventMap>(event: K, callback: (arg: UConnectClientEventMap[K]) => any): void;
-    off<K extends keyof UConnectClientEventMap>(event: K, callback: (arg: UConnectClientEventMap[K]) => any): void;
-    once<K extends keyof UConnectClientEventMap>(event: K, callback: (arg: UConnectClientEventMap[K]) => any): void;
 }
 
 declare interface UConnectClientEventMap {
-    status: TransportState;
+    status: ConnectionState;
+    open: undefined;
+    close?: void;
+    error: Error;
+    message: any;
 }
 
 export declare interface UConnectClientOptions {
     /**
-     * url for websocket connection to server
+     *
+     * connection for data transfer.
      */
-    url: string | URL;
+    connection: IConnection;
     /**
-     * debug mode loging (default: false)
+     * serializer for data serialization (optional).
+     * @default MessagePackSerializer
      */
-    debug?: boolean;
+    serializer?: ISerializer;
     /**
-     * reconnect delay in ms (default: 1000) or false to disable
+     * id provider for unique id generation (optional).
+     * @default NextIdProvider
      */
-    reconnectDelay?: number | false | ((reconnects: number, e: IClientCloseEvent) => number | false);
+    idProvider?: IUniqueIdProvider;
     /**
-     * custom client for websocket connection (default: WebSocket browser API)
+     * logger instance for logging (optional).
+     * @default ConsoleLogger
      */
-    client?: IClient;
+    logger?: ILogger;
 }
 
 /**
@@ -429,6 +470,63 @@ export declare interface UnaryResponse<D> {
     status: Status;
     meta?: ResponseMeta | null;
     response: D;
+}
+
+/**
+ * WebSocketTransport connection interface
+ */
+export declare class WebSocketConnection implements IConnection {
+    private _client;
+    private _reconnectDelay;
+    private _url;
+    private _socket;
+    private _reconnectPromise;
+    /** Current state of the connection */
+    private _state;
+    get state(): ConnectionState;
+    private set state(value);
+    private readonly _emitter;
+    constructor({ client, url, reconnectDelay, debug }: {
+        debug?: boolean;
+        /**
+         * url for websocket connection to server
+         */
+        url: string | URL;
+        /**
+         * reconnect delay in ms (default: 1000) or false to disable
+         */
+        reconnectDelay?: number | false | ((reconnects: number, e: IClientCloseEvent) => number | false);
+        /**
+         * custom client for websocket connection (default: WebSocket browser API)
+         */
+        client?: IClient;
+    });
+    /**
+     * Open the WebSocketTransport.
+     */
+    connect(): Promise<IConnection>;
+    /**
+     * Sends a message to the server.
+     */
+    send(message: any): Promise<void>;
+    /**
+     * Closes the WebSocketTransport.
+     */
+    close(): void;
+    /**
+     * Reconnects the WebSocketTransport if it is disconnected state.
+     * @param {number} attempt - The number of reconnect attempts made so far. Defaults to 0.
+     * @return {Promise<void>} A Promise that resolves once the WebSocketTransport is reconnected.
+     */
+    private reconnect;
+    /**
+     * Creates the WebSocket instance.
+     * @returns true if the socket new created else false the socket already exists or created.
+     */
+    private createSocket;
+    addEventListener<K extends keyof UConnectClientEventMap>(event: K, callback: (arg: UConnectClientEventMap[K]) => any): void;
+    removeEventListener<K extends keyof UConnectClientEventMap>(event: K, callback: (arg: UConnectClientEventMap[K]) => any): void;
+    once<K extends keyof UConnectClientEventMap>(event: K, callback: (arg: UConnectClientEventMap[K]) => any): void;
 }
 
 export { }
