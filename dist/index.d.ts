@@ -486,8 +486,7 @@ export declare class WebSocketConnection implements IConnection {
     get state(): ConnectionState;
     private set state(value);
     private readonly _emitter;
-    constructor({ client, url, reconnectDelay, debug }: {
-        debug?: boolean;
+    constructor({ client, url, reconnectDelay }: {
         /**
          * url for websocket connection to server
          */

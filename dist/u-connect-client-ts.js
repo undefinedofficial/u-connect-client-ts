@@ -1208,8 +1208,7 @@ class Te {
   constructor({
     client: e,
     url: t,
-    reconnectDelay: i,
-    debug: s
+    reconnectDelay: i
   }) {
     a(this, "_client");
     a(this, "_reconnectDelay", 1e3);
@@ -1219,9 +1218,8 @@ class Te {
     /** Current state of the connection */
     a(this, "_state");
     a(this, "_emitter");
-    if (typeof WebSocket > "u" && e === void 0)
-      throw new Error("WebSocket API is not supported in this environment or no client was provided.");
-    this._client ?? (this._client = WebSocket), this._url = t, this._reconnectDelay = i ?? 1e3, this._reconnectPromise = null, this._socket = null, this._emitter = new me(), this._state = 0;
+    if (this._client = e ?? WebSocket, !this._client) throw new Error("WebSocket API is not supported in this environment or no client was provided.");
+    this._url = t, this._reconnectDelay = i ?? 1e3, this._reconnectPromise = null, this._socket = null, this._emitter = new me(), this._state = 0;
   }
   get state() {
     return this._state;

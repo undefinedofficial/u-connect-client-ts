@@ -89,10 +89,10 @@ export class WebSocketConnection implements IConnection {
   constructor({
     client,
     url,
-    reconnectDelay,
-    debug
-  }: {
-    debug?: boolean;
+    reconnectDelay
+  }: // debug
+  {
+    // debug?: boolean;
     /**
      * url for websocket connection to server
      */
@@ -107,10 +107,9 @@ export class WebSocketConnection implements IConnection {
      */
     client?: IClient;
   }) {
-    if (typeof WebSocket === "undefined" && client === undefined)
-      throw new Error("WebSocket API is not supported in this environment or no client was provided.");
+    this._client = client ?? (WebSocket as unknown as IClient);
+    if (!this._client) throw new Error("WebSocket API is not supported in this environment or no client was provided.");
 
-    this._client ??= WebSocket as unknown as IClient;
     this._url = url;
     this._reconnectDelay = reconnectDelay ?? 1000;
     this._reconnectPromise = null;
