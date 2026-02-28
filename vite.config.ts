@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => ({
   build:
     mode === "connector"
       ? {
-          outDir: "dist-connector"
+          outDir: "docs"
         }
       : {
           lib: {
