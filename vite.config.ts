@@ -13,33 +13,44 @@ import vue from "@vitejs/plugin-vue";
 import dts from "vite-plugin-dts";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  plugins: mode === "connector" ? [vue()] : [vue(), dts({ rollupTypes: true, include: ["u-connect/**/*"] })],
-  resolve: {
-    alias: {
-      "@": fileURLToPath(new URL("./example", import.meta.url))
-    }
-  },
-  build:
-    mode === "connector"
-      ? {
-          outDir: "docs"
+export default defineConfig(({ mode }) => {
+  if (mode === "connector") {
+    return {
+      plugins: [vue()],
+      resolve: {
+        alias: {
+          "@": fileURLToPath(new URL("./example", import.meta.url))
         }
-      : {
-          lib: {
-            entry: fileURLToPath(new URL("./u-connect/index.ts", import.meta.url)),
-            name: "u-connect-client-ts",
-            fileName: "u-connect-client-ts",
-            formats: ["cjs", "es"]
-          }
-        },
-  server: {
-    proxy: {
-      "/api": {
-        target: "http://localhost:3000",
-        changeOrigin: true,
-        ws: true
+      },
+      base: "/u-connect-client-ts",
+      build: {
+        outDir: "docs"
+      }
+    };
+  }
+  return {
+    plugins: [vue(), dts({ rollupTypes: true, include: ["u-connect/**/*"] })],
+    resolve: {
+      alias: {
+        "@": fileURLToPath(new URL("./example", import.meta.url))
+      }
+    },
+    build: {
+      lib: {
+        entry: fileURLToPath(new URL("./u-connect/index.ts", import.meta.url)),
+        name: "u-connect-client-ts",
+        fileName: "u-connect-client-ts",
+        formats: ["cjs", "es"]
+      }
+    },
+    server: {
+      proxy: {
+        "/api": {
+          target: "http://localhost:3000",
+          changeOrigin: true,
+          ws: true
+        }
       }
     }
-  }
-}));
+  };
+});
