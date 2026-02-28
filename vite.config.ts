@@ -13,21 +13,26 @@ import vue from "@vitejs/plugin-vue";
 import dts from "vite-plugin-dts";
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [vue(), dts({ rollupTypes: true, include: ["u-connect/**/*"] })],
+export default defineConfig(({ mode }) => ({
+  plugins: mode === "connector" ? [vue()] : [vue(), dts({ rollupTypes: true, include: ["u-connect/**/*"] })],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./example", import.meta.url))
     }
   },
-  build: {
-    lib: {
-      entry: fileURLToPath(new URL("./u-connect/index.ts", import.meta.url)),
-      name: "u-connect-client-ts",
-      fileName: "u-connect-client-ts",
-      formats: ["cjs", "es"]
-    }
-  },
+  build:
+    mode === "connector"
+      ? {
+          outDir: "dist-connector"
+        }
+      : {
+          lib: {
+            entry: fileURLToPath(new URL("./u-connect/index.ts", import.meta.url)),
+            name: "u-connect-client-ts",
+            fileName: "u-connect-client-ts",
+            formats: ["cjs", "es"]
+          }
+        },
   server: {
     proxy: {
       "/api": {
@@ -37,4 +42,4 @@ export default defineConfig({
       }
     }
   }
-});
+}));
