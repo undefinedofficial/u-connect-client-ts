@@ -278,7 +278,7 @@ const activeTab = shallowRef<"response" | "stream" | "metadata" | "status">("res
 const responseData = shallowRef("");
 const responseMetadata = shallowRef<Readonly<Record<string, string>>>({});
 const responseStatus = shallowRef("");
-const streamMessages = shallowRef<string[]>([]);
+const streamMessages = ref<string[]>([]);
 const streamInput = shallowRef("");
 const isExecuting = shallowRef(false);
 
