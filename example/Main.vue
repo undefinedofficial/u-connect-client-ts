@@ -623,42 +623,25 @@ async function executeUnaryRequest(service: any, options: ServiceMethodOptions) 
 
 // Execute Server Stream request
 async function executeServerStreamRequest(service: any, options: ServiceMethodOptions) {
-  try {
-    const stream = service.serverStream(
-      currentRequest.value.method,
-      parseRequestData(currentRequest.value.data),
-      options
-    ) as IServerStream<any>;
-
-    stream.onMessage((data: any) => {
+  currentStream.value = service
+    .serverStream(currentRequest.value.method, parseRequestData(currentRequest.value.data), options)
+    .onMessage((data: any) => {
       streamMessages.value.push(JSON.stringify(data));
-    });
-
-    stream.onEnd((result) => {
+    })
+    .onEnd((result: any) => {
       responseStatus.value = `Stream Ended: ${Status[result.status]} (${result.status})`;
       responseMetadata.value = result.meta ?? {};
-    });
-
-    stream.onError((error: Error) => {
+    })
+    .onError((error: Error) => {
       responseStatus.value = `Stream Error: ${
         error instanceof MethodError ? `${Status[error.status]} (${error.status}) - ${error.message}` : error.message
       }`;
     });
-
-    currentStream.value = stream;
-  } catch (error) {
-    throw error;
-  }
 }
 
 // Execute Client Stream request
 async function executeClientStreamRequest(service: any, options: ServiceMethodOptions) {
-  try {
-    const stream = service.clientStream(currentRequest.value.method, options) as IClientStream<any, any>;
-    currentStream.value = stream;
-  } catch (error) {
-    throw error;
-  }
+  currentStream.value = service.clientStream(currentRequest.value.method, options) as IClientStream<any, any>;
 }
 
 // Complete Client Stream or Duplex Stream
@@ -682,18 +665,19 @@ async function completeStream() {
 // Execute Duplex Stream request
 async function executeDuplexStreamRequest(service: any, options: ServiceMethodOptions) {
   try {
-    const stream = service.duplex(currentRequest.value.method, options) as IDuplexStream<any, any>;
-    stream.onMessage((data) => streamMessages.value.push(JSON.stringify(data)));
-    stream.onEnd((result) => {
-      responseStatus.value = `Stream Ended: ${Status[result.status]} (${result.status})`;
-      responseMetadata.value = result.meta ?? {};
-    });
-    stream.onError(
-      (error: Error) =>
-        (responseStatus.value = `Stream Error: ${
-          error instanceof MethodError ? `${Status[error.status]} (${error.status}) - ${error.message}` : error.message
-        }`)
-    );
+    const stream = service
+      .duplex(currentRequest.value.method, options)
+      .onMessage((data: any) => streamMessages.value.push(JSON.stringify(data)))
+      .onEnd((result: any) => {
+        responseStatus.value = `Stream Ended: ${Status[result.status]} (${result.status})`;
+        responseMetadata.value = result.meta ?? {};
+      })
+      .onError(
+        (error: Error) =>
+          (responseStatus.value = `Stream Error: ${
+            error instanceof MethodError ? `${Status[error.status]} (${error.status}) - ${error.message}` : error.message
+          }`)
+      );
 
     currentStream.value = stream;
   } catch (error) {
