@@ -128,7 +128,7 @@ export class WebSocketConnection implements IConnection {
       this._reconnectPromise = new PromiseValue<IConnection>();
       this.createSocket();
     }
-    return this._reconnectPromise?.value();
+    return this._reconnectPromise?.value;
   }
   /**
    * Sends a message to the server.
@@ -143,7 +143,7 @@ export class WebSocketConnection implements IConnection {
   close() {
     this._state = ConnectionState.CLOSED;
 
-    this._reconnectPromise?.reject(new MethodError(Status.UNAVAILABLE, "Transport closed"));
+    this._reconnectPromise?.reject(new MethodError(Status.CANCELLED, "Transport closed"));
     this._reconnectPromise = null;
 
     this._socket?.close();

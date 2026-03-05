@@ -7,16 +7,18 @@
  */
 
 import type { IServerStream, ServerResponse } from "./DataType";
+import { MethodError } from "./Exceptions";
+import { Status } from "./Status";
 
 export class ServerStream<T = any, M = string> implements IServerStream<T, M> {
   private isOpen = true;
   public InvokeEnd?: (result: ServerResponse<null | undefined, M>) => void;
   public InvokeMessage?: (data: T) => void;
-  public InvokeError?: (error: Error) => void;
+  public InvokeError?: (error: MethodError) => void;
 
-  onError(callback: (error: Error) => void) {
+  onError(callback: (error: MethodError) => void) {
     this.InvokeError = callback;
-    if (!this.isOpen) callback(new Error("Transport closed"));
+    if (!this.isOpen) callback(new MethodError(Status.CANCELLED, "Transport closed"));
     return this;
   }
   onMessage(callback: (data: T) => void) {
@@ -30,6 +32,6 @@ export class ServerStream<T = any, M = string> implements IServerStream<T, M> {
 
   close() {
     this.isOpen = false;
-    this.InvokeError?.(new Error("Transport closed"));
+    this.InvokeError?.(new MethodError(Status.CANCELLED, "Transport closed"));
   }
 }

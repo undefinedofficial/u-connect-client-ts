@@ -1,7 +1,13 @@
 var O = Object.defineProperty;
 var $ = (r, e, t) => e in r ? O(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
 var h = (r, e, t) => $(r, typeof e != "symbol" ? e + "" : e, t);
-class N {
+class f extends Error {
+  constructor(e, t) {
+    super(t), this.status = e, this.name = "MethodError";
+  }
+}
+var d = /* @__PURE__ */ ((r) => (r[r.OK = 0] = "OK", r[r.CANCELLED = 1] = "CANCELLED", r[r.UNKNOWN = 2] = "UNKNOWN", r[r.INVALID_ARGUMENT = 3] = "INVALID_ARGUMENT", r[r.DEADLINE_EXCEEDED = 4] = "DEADLINE_EXCEEDED", r[r.NOT_FOUND = 5] = "NOT_FOUND", r[r.ALREADY_EXISTS = 6] = "ALREADY_EXISTS", r[r.PERMISSION_DENIED = 7] = "PERMISSION_DENIED", r[r.RESOURCE_EXHAUSTED = 8] = "RESOURCE_EXHAUSTED", r[r.FAILED_PRECONDITION = 9] = "FAILED_PRECONDITION", r[r.ABORTED = 10] = "ABORTED", r[r.OUT_OF_RANGE = 11] = "OUT_OF_RANGE", r[r.UNIMPLEMENTED = 12] = "UNIMPLEMENTED", r[r.INTERNAL = 13] = "INTERNAL", r[r.UNAVAILABLE = 14] = "UNAVAILABLE", r[r.DATA_LOSS = 15] = "DATA_LOSS", r[r.UNAUTHENTICATED = 16] = "UNAUTHENTICATED", r))(d || {});
+class L {
   constructor() {
     h(this, "isOpen", !0);
     h(this, "InvokeEnd");
@@ -9,7 +15,7 @@ class N {
     h(this, "InvokeError");
   }
   onError(e) {
-    return this.InvokeError = e, this.isOpen || e(new Error("Transport closed")), this;
+    return this.InvokeError = e, this.isOpen || e(new f(d.CANCELLED, "Transport closed")), this;
   }
   onMessage(e) {
     return this.InvokeMessage = e, this;
@@ -19,10 +25,10 @@ class N {
   }
   close() {
     var e;
-    this.isOpen = !1, (e = this.InvokeError) == null || e.call(this, new Error("Transport closed"));
+    this.isOpen = !1, (e = this.InvokeError) == null || e.call(this, new f(d.CANCELLED, "Transport closed"));
   }
 }
-var d = /* @__PURE__ */ ((r) => (r[r.CONNECT = 1] = "CONNECT", r[r.DISCONNECT = 2] = "DISCONNECT", r[r.UNARY_CLIENT = 3] = "UNARY_CLIENT", r[r.UNARY_SERVER = 4] = "UNARY_SERVER", r[r.STREAM_CLIENT = 5] = "STREAM_CLIENT", r[r.STREAM_SERVER = 6] = "STREAM_SERVER", r[r.STREAM_DUPLEX = 7] = "STREAM_DUPLEX", r[r.STREAM_END = 8] = "STREAM_END", r[r.ABORT = 9] = "ABORT", r))(d || {});
+var l = /* @__PURE__ */ ((r) => (r[r.CONNECT = 1] = "CONNECT", r[r.DISCONNECT = 2] = "DISCONNECT", r[r.UNARY_CLIENT = 3] = "UNARY_CLIENT", r[r.UNARY_SERVER = 4] = "UNARY_SERVER", r[r.STREAM_CLIENT = 5] = "STREAM_CLIENT", r[r.STREAM_SERVER = 6] = "STREAM_SERVER", r[r.STREAM_DUPLEX = 7] = "STREAM_DUPLEX", r[r.STREAM_END = 8] = "STREAM_END", r[r.ABORT = 9] = "ABORT", r))(l || {});
 class A {
   constructor() {
     h(this, "_value");
@@ -35,28 +41,28 @@ class A {
    * Check if the PromiseValue has a stored value or error.
    * @return {boolean} true if the PromiseValue has a stored value or error, false otherwise
    */
-  has() {
-    return this.hasValue() || this.hasError();
+  get has() {
+    return this.hasValue || this.hasError;
   }
   /**
    * Check if the PromiseValue has a stored value.
    * @return {boolean} true if the value is not undefined, false otherwise
    */
-  hasValue() {
+  get hasValue() {
     return this._value !== void 0;
   }
   /**
    * Check if the PromiseValue has an error stored.
    * @return {boolean} true if the error is not undefined, false otherwise
    */
-  hasError() {
+  get hasError() {
     return this._error !== void 0;
   }
   /**
    * Wait for the PromiseValue to resolve.
    * @return {Promise<T>} A Promise that resolves with the value or rejects with the error.
    */
-  value() {
+  get value() {
     return this._value ? Promise.resolve(this._value) : this._error ? Promise.reject(this._error) : (this._task || (this._task = new Promise((e, t) => {
       this._resolve = e, this._reject = t;
     })), this._task);
@@ -86,10 +92,10 @@ class R {
   }
   async send(e) {
     var t;
-    return this._result.has() ? Promise.reject("u-connect-client-ts: client stream error") : ((t = this._next) != null && t.has() && await this._next.value(), this._next = new A(), this._transport.send({ id: this.id, type: d.STREAM_CLIENT, method: this.method, request: e }), this._next.value());
+    return this._result.has ? Promise.reject("u-connect-client-ts: client stream error") : ((t = this._next) != null && t.has && await this._next.value, this._next = new A(), this._transport.send({ id: this.id, type: l.STREAM_CLIENT, method: this.method, request: e }), this._next.value);
   }
   async complete() {
-    return await this._transport.send({ id: this.id, type: d.STREAM_END, method: this.method }), this._result.value();
+    return await this._transport.send({ id: this.id, type: l.STREAM_END, method: this.method }), this._result.value;
   }
   result(e) {
     this._result.resolve(e);
@@ -104,16 +110,10 @@ class R {
   }
   close() {
     var t;
-    const e = new Error("Transport closed");
+    const e = new f(d.CANCELLED, "Transport closed");
     this._result.reject(e), (t = this._next) == null || t.reject(e);
   }
 }
-class E extends Error {
-  constructor(e, t) {
-    super(t), this.status = e, this.name = "MethodError";
-  }
-}
-var f = /* @__PURE__ */ ((r) => (r[r.OK = 0] = "OK", r[r.CANCELLED = 1] = "CANCELLED", r[r.UNKNOWN = 2] = "UNKNOWN", r[r.INVALID_ARGUMENT = 3] = "INVALID_ARGUMENT", r[r.DEADLINE_EXCEEDED = 4] = "DEADLINE_EXCEEDED", r[r.NOT_FOUND = 5] = "NOT_FOUND", r[r.ALREADY_EXISTS = 6] = "ALREADY_EXISTS", r[r.PERMISSION_DENIED = 7] = "PERMISSION_DENIED", r[r.RESOURCE_EXHAUSTED = 8] = "RESOURCE_EXHAUSTED", r[r.FAILED_PRECONDITION = 9] = "FAILED_PRECONDITION", r[r.ABORTED = 10] = "ABORTED", r[r.OUT_OF_RANGE = 11] = "OUT_OF_RANGE", r[r.UNIMPLEMENTED = 12] = "UNIMPLEMENTED", r[r.INTERNAL = 13] = "INTERNAL", r[r.UNAVAILABLE = 14] = "UNAVAILABLE", r[r.DATA_LOSS = 15] = "DATA_LOSS", r[r.UNAUTHENTICATED = 16] = "UNAUTHENTICATED", r))(f || {});
 class F {
   constructor(e, t, i) {
     this._transport = e, this._service = t, this._idProvider = i;
@@ -123,7 +123,7 @@ class F {
       {
         id: this._idProvider.getId(),
         method: `${this._service}.${e}`,
-        type: d.UNARY_CLIENT,
+        type: l.UNARY_CLIENT,
         request: t,
         meta: i == null ? void 0 : i.meta
       },
@@ -138,11 +138,11 @@ class F {
   clientStream(e, t) {
     const i = this._idProvider.getId(), s = `${this._service}.${e}`, n = new R(this._transport, i, s);
     return this._transport.sendRequest(
-      { id: i, method: `${this._service}.${e}`, type: d.STREAM_CLIENT, request: null, meta: t == null ? void 0 : t.meta },
+      { id: i, method: `${this._service}.${e}`, type: l.STREAM_CLIENT, request: null, meta: t == null ? void 0 : t.meta },
       t,
       (o) => {
-        if (o.type === d.STREAM_CLIENT) return n.next();
-        n.error(new E(f.INTERNAL, "Internal server error"));
+        if (o.type === l.STREAM_CLIENT) return n.next();
+        n.error(new f(d.UNKNOWN, "Unknown error occurred in client stream"));
       }
     ).then(
       (o) => n.result({
@@ -154,20 +154,20 @@ class F {
     ).catch((o) => n.error(o)), n;
   }
   serverStream(e, t, i) {
-    const s = new N();
+    const s = new L();
     return this._transport.sendRequest(
       {
         id: this._idProvider.getId(),
-        type: d.STREAM_SERVER,
+        type: l.STREAM_SERVER,
         method: `${this._service}.${e}`,
         request: t,
         meta: i == null ? void 0 : i.meta
       },
       i,
       (n) => {
-        var o, a;
-        if (n.type === d.STREAM_SERVER) return (o = s.InvokeMessage) == null ? void 0 : o.call(s, n.response);
-        (a = s.InvokeError) == null || a.call(s, new E(f.INTERNAL, "Internal server error"));
+        var o, c;
+        if (n.type === l.STREAM_SERVER) return (o = s.InvokeMessage) == null ? void 0 : o.call(s, n.response);
+        (c = s.InvokeError) == null || c.call(s, new f(d.UNKNOWN, "Unknown error occurred in server stream"));
       }
     ).then((n) => {
       var o;
@@ -178,46 +178,36 @@ class F {
     }), s;
   }
   duplex(e, t) {
-    const i = this._idProvider.getId(), s = `${this._service}.${e}`, n = new R(this._transport, i, s), o = new N(), a = {
-      complete() {
-        return n.complete();
-      },
-      send(c) {
-        return n.send(c);
-      },
-      onMessage(c) {
-        o.onMessage(c);
-      },
-      onError(c) {
-        o.onError(c);
-      },
-      onEnd(c) {
-        o.onEnd(c);
-      }
-    };
+    const i = this._idProvider.getId(), s = `${this._service}.${e}`, n = new R(this._transport, i, s), o = new L();
     return this._transport.sendRequest(
-      { id: i, method: s, type: d.STREAM_DUPLEX, meta: t == null ? void 0 : t.meta },
+      { id: i, method: s, type: l.STREAM_DUPLEX, meta: t == null ? void 0 : t.meta },
       t,
       (c) => {
-        var w, x;
-        if (c.type === d.STREAM_CLIENT) return n.next();
-        if (c.type === d.STREAM_SERVER) return (w = o.InvokeMessage) == null ? void 0 : w.call(o, c.response);
-        const l = new E(f.INTERNAL, "Internal server error");
-        n.error(l), (x = o.InvokeError) == null || x.call(o, l);
+        var x, w;
+        if (c.type === l.STREAM_CLIENT) return n.next();
+        if (c.type === l.STREAM_SERVER) return (x = o.InvokeMessage) == null ? void 0 : x.call(o, c.response);
+        const a = new f(d.UNKNOWN, "Unknown error during duplex stream processing");
+        n.error(a), (w = o.InvokeError) == null || w.call(o, a);
       }
     ).then((c) => {
-      var w;
-      const l = {
+      var x;
+      const a = {
         method: c.method,
         response: c.response,
         status: c.status,
         meta: c.meta
       };
-      n.result(l), (w = o.InvokeEnd) == null || w.call(o, l);
+      n.result(a), (x = o.InvokeEnd) == null || x.call(o, a);
     }).catch((c) => {
-      var l;
-      n.error(c), (l = o.InvokeError) == null || l.call(o, c);
-    }), a;
+      var a;
+      n.error(c), (a = o.InvokeError) == null || a.call(o, c);
+    }), {
+      complete: n.complete,
+      send: n.send,
+      onMessage: o.onMessage,
+      onError: o.onError,
+      onEnd: o.onEnd
+    };
   }
 }
 function b(r) {
@@ -242,7 +232,7 @@ function b(r) {
   }
   return t;
 }
-function H(r, e, t) {
+function K(r, e, t) {
   const i = r.length;
   let s = t, n = 0;
   for (; n < i; ) {
@@ -252,8 +242,8 @@ function H(r, e, t) {
         e[s++] = o >> 6 & 31 | 192;
       else {
         if (o >= 55296 && o <= 56319 && n < i) {
-          const a = r.charCodeAt(n);
-          (a & 64512) === 56320 && (++n, o = ((o & 1023) << 10) + (a & 1023) + 65536);
+          const c = r.charCodeAt(n);
+          (c & 64512) === 56320 && (++n, o = ((o & 1023) << 10) + (c & 1023) + 65536);
         }
         o & 4294901760 ? (e[s++] = o >> 18 & 7 | 240, e[s++] = o >> 12 & 63 | 128, e[s++] = o >> 6 & 63 | 128) : (e[s++] = o >> 12 & 15 | 224, e[s++] = o >> 6 & 63 | 128);
       }
@@ -264,12 +254,12 @@ function H(r, e, t) {
     e[s++] = o & 63 | 128;
   }
 }
-const V = new TextEncoder(), K = 50;
+const H = new TextEncoder(), V = 50;
 function W(r, e, t) {
-  V.encodeInto(r, e.subarray(t));
+  H.encodeInto(r, e.subarray(t));
 }
 function X(r, e, t) {
-  r.length > K ? W(r, e, t) : H(r, e, t);
+  r.length > V ? W(r, e, t) : K(r, e, t);
 }
 const q = 4096;
 function M(r, e, t) {
@@ -277,21 +267,21 @@ function M(r, e, t) {
   const s = i + t, n = [];
   let o = "";
   for (; i < s; ) {
-    const a = r[i++];
-    if (!(a & 128))
-      n.push(a);
-    else if ((a & 224) === 192) {
-      const c = r[i++] & 63;
-      n.push((a & 31) << 6 | c);
-    } else if ((a & 240) === 224) {
-      const c = r[i++] & 63, l = r[i++] & 63;
-      n.push((a & 31) << 12 | c << 6 | l);
-    } else if ((a & 248) === 240) {
-      const c = r[i++] & 63, l = r[i++] & 63, w = r[i++] & 63;
-      let x = (a & 7) << 18 | c << 12 | l << 6 | w;
-      x > 65535 && (x -= 65536, n.push(x >>> 10 & 1023 | 55296), x = 56320 | x & 1023), n.push(x);
+    const c = r[i++];
+    if (!(c & 128))
+      n.push(c);
+    else if ((c & 224) === 192) {
+      const a = r[i++] & 63;
+      n.push((c & 31) << 6 | a);
+    } else if ((c & 240) === 224) {
+      const a = r[i++] & 63, x = r[i++] & 63;
+      n.push((c & 31) << 12 | a << 6 | x);
+    } else if ((c & 248) === 240) {
+      const a = r[i++] & 63, x = r[i++] & 63, w = r[i++] & 63;
+      let E = (c & 7) << 18 | a << 12 | x << 6 | w;
+      E > 65535 && (E -= 65536, n.push(E >>> 10 & 1023 | 55296), E = 56320 | E & 1023), n.push(E);
     } else
-      n.push(a);
+      n.push(c);
     n.length >= q && (o += String.fromCharCode(...n), n.length = 0);
   }
   return n.length > 0 && (o += String.fromCharCode(...n)), o;
@@ -712,8 +702,8 @@ class Ee {
     const s = this.caches[i - 1];
     e: for (const n of s) {
       const o = n.bytes;
-      for (let a = 0; a < i; a++)
-        if (o[a] !== e[t + a])
+      for (let c = 0; c < i; c++)
+        if (o[c] !== e[t + c])
           continue e;
       return n.str;
     }
@@ -796,7 +786,7 @@ try {
     throw new Error("This module is not supported in the current JavaScript engine because DataView does not throw RangeError on out-of-bounds access");
 }
 const D = new RangeError("Insufficient data"), ye = new Ee();
-class L {
+class N {
   constructor(e) {
     h(this, "extensionCodec");
     h(this, "context");
@@ -819,7 +809,7 @@ class L {
     this.extensionCodec = (e == null ? void 0 : e.extensionCodec) ?? I.defaultCodec, this.context = e == null ? void 0 : e.context, this.useBigInt64 = (e == null ? void 0 : e.useBigInt64) ?? !1, this.rawStrings = (e == null ? void 0 : e.rawStrings) ?? !1, this.maxStrLength = (e == null ? void 0 : e.maxStrLength) ?? g, this.maxBinLength = (e == null ? void 0 : e.maxBinLength) ?? g, this.maxArrayLength = (e == null ? void 0 : e.maxArrayLength) ?? g, this.maxMapLength = (e == null ? void 0 : e.maxMapLength) ?? g, this.maxExtLength = (e == null ? void 0 : e.maxExtLength) ?? g, this.keyDecoder = (e == null ? void 0 : e.keyDecoder) !== void 0 ? e.keyDecoder : ye, this.mapKeyConverter = (e == null ? void 0 : e.mapKeyConverter) ?? we;
   }
   clone() {
-    return new L({
+    return new N({
       extensionCodec: this.extensionCodec,
       context: this.context,
       useBigInt64: this.useBigInt64,
@@ -889,15 +879,15 @@ class L {
     try {
       this.entered = !0;
       let t = !1, i;
-      for await (const a of e) {
+      for await (const c of e) {
         if (t)
           throw this.entered = !1, this.createExtraByteError(this.totalPos);
-        this.appendBuffer(a);
+        this.appendBuffer(c);
         try {
           i = this.doDecodeSync(), t = !0;
-        } catch (c) {
-          if (!(c instanceof RangeError))
-            throw c;
+        } catch (a) {
+          if (!(a instanceof RangeError))
+            throw a;
         }
         this.totalPos += this.pos;
       }
@@ -1216,15 +1206,15 @@ class L {
   }
 }
 function Ue(r, e) {
-  return new L(e).decode(r);
+  return new N(e).decode(r);
 }
 class me {
   serialize({ id: e, method: t, type: i, request: s, meta: n }) {
     return fe([e, t, i, s || null, n || null]);
   }
   deserialize(e) {
-    const [t, i, s, n, o, a, c] = Ue(e);
-    return { id: t, method: i, type: s, status: o, response: n, meta: a, error: c };
+    const [t, i, s, n, o, c, a] = Ue(e);
+    return { id: t, method: i, type: s, status: o, response: n, meta: c, error: a };
   }
 }
 class Ae {
@@ -1281,7 +1271,7 @@ class Se {
    */
   connect() {
     var e;
-    return this.state !== 3 && (this.state = 1), this._reconnectPromise === null && (this._reconnectPromise = new A(), this.createSocket()), (e = this._reconnectPromise) == null ? void 0 : e.value();
+    return this.state !== 3 && (this.state = 1), this._reconnectPromise === null && (this._reconnectPromise = new A(), this.createSocket()), (e = this._reconnectPromise) == null ? void 0 : e.value;
   }
   /**
    * Sends a message to the server.
@@ -1295,7 +1285,7 @@ class Se {
    */
   close() {
     var e, t;
-    this._state = 0, (e = this._reconnectPromise) == null || e.reject(new E(f.UNAVAILABLE, "Transport closed")), this._reconnectPromise = null, (t = this._socket) == null || t.close(), this._socket = null, this._emitter.emit("close", void 0);
+    this._state = 0, (e = this._reconnectPromise) == null || e.reject(new f(d.CANCELLED, "Transport closed")), this._reconnectPromise = null, (t = this._socket) == null || t.close(), this._socket = null, this._emitter.emit("close", void 0);
   }
   /**
    * Reconnects the WebSocketTransport if it is disconnected state.
@@ -1402,7 +1392,7 @@ class pe {
    * @return {Promise<void>} A Promise that resolves once the disposal is complete.
    */
   dispose() {
-    this._tasks.forEach((e) => e.onError(new E(f.UNAVAILABLE, "Transport closed"))), this._tasks.clear();
+    this._tasks.forEach((e) => e.onError(new f(d.CANCELLED, "Transport closed"))), this._tasks.clear();
   }
   /**
    * Serializes and sends a message over the WebSocket connection.
@@ -1422,22 +1412,22 @@ class pe {
       t != null && t.abort && s.push(
         new Promise(
           (n, o) => {
-            var a;
-            return (a = t == null ? void 0 : t.abort) == null ? void 0 : a.addEventListener("abort", () => o(new E(f.ABORTED, "Request aborted")));
+            var c;
+            return (c = t == null ? void 0 : t.abort) == null ? void 0 : c.addEventListener("abort", () => o(new f(d.ABORTED, "Request aborted")));
           }
         )
       ), await Promise.race(s);
     }
     return new Promise((s, n) => {
-      var o, a;
+      var o, c;
       if (this._tasks.set(e.id, { onMessage: i, onEnd: s, onError: n }), t != null && t.abort || t != null && t.timeout) {
-        const c = async (l) => {
-          const { id: w, method: x } = e;
-          this._tasks.delete(w) && (await this.send({ id: w, method: x, type: d.ABORT }), n(l));
+        const a = async (x) => {
+          const { id: w, method: E } = e;
+          this._tasks.delete(w) && (await this.send({ id: w, method: E, type: l.ABORT }), n(x));
         };
-        (o = t.abort) == null || o.addEventListener("abort", () => c(new E(f.ABORTED, "Request aborted"))), t.timeout && (e.meta = { ...e.meta, timeout: t.timeout.toString() }, setTimeout(() => c(new E(f.DEADLINE_EXCEEDED, "Request timed out")), t.timeout));
+        (o = t.abort) == null || o.addEventListener("abort", () => a(new f(d.ABORTED, "Request aborted"))), t.timeout && (e.meta = { ...e.meta, timeout: t.timeout.toString() }, setTimeout(() => a(new f(d.DEADLINE_EXCEEDED, "Request timed out")), t.timeout));
       }
-      (a = this._options.logger) == null || a.info(`Sending request ${e.method}`), this.send(e);
+      (c = this._options.logger) == null || c.info(`Sending request ${e.method}`), this.send(e);
     });
   }
   /**
@@ -1446,31 +1436,31 @@ class pe {
    * @return {Promise<void>} A promise that resolves when the message is handled.
    */
   async onMessage(e) {
-    var i, s, n, o, a, c;
+    var i, s, n, o, c, a;
     const t = this._tasks.get(e.id);
     switch (e.type) {
-      case d.UNARY_CLIENT: {
+      case l.UNARY_CLIENT: {
         t && ((i = this._options.logger) == null || i.info(
-          `unary responce ${e.method} ${e.status}(${f[e.status]}) ${e.error ? "error message: " + e.error : "success"}`
-        ), this._tasks.delete(e.id), e.error ? t.onError(new E(e.status ?? f.INTERNAL, e.error)) : t.onEnd(e));
+          `unary responce ${e.method} ${e.status}(${d[e.status]}) ${e.error ? "error message: " + e.error : "success"}`
+        ), this._tasks.delete(e.id), e.error ? t.onError(new f(e.status ?? d.INTERNAL, e.error)) : t.onEnd(e));
         break;
       }
-      case d.STREAM_CLIENT:
-      case d.STREAM_SERVER:
+      case l.STREAM_CLIENT:
+      case l.STREAM_SERVER:
         t && ((s = this._options.logger) == null || s.info("stream data " + e.method), (n = t.onMessage) == null || n.call(t, e));
         break;
-      case d.STREAM_END: {
+      case l.STREAM_END: {
         t && ((o = this._options.logger) == null || o.info(
-          `stream end ${e.method} ${e.status}(${f[e.status]}) ${e.error ? "error message: " + e.error : "success"}`
-        ), e.error ? t.onError(new E(e.status ?? f.INTERNAL, e.error)) : t.onEnd(e), this._tasks.delete(e.id));
+          `stream end ${e.method} ${e.status}(${d[e.status]}) ${e.error ? "error message: " + e.error : "success"}`
+        ), e.error ? t.onError(new f(e.status ?? d.INTERNAL, e.error)) : t.onEnd(e), this._tasks.delete(e.id));
         break;
       }
-      case d.ABORT: {
-        (a = this._options.logger) == null || a.info(`abort request ${e.method}`), t && t.onError(new E(e.status ?? f.ABORTED, e.error ?? "Request aborted"));
+      case l.ABORT: {
+        (c = this._options.logger) == null || c.info(`abort request ${e.method}`), t && t.onError(new f(e.status ?? d.ABORTED, e.error ?? "Request aborted"));
         break;
       }
       default:
-        (c = this._options.logger) == null || c.error("Unknown message type: ", e);
+        (a = this._options.logger) == null || a.error("Unknown message type: ", e);
         break;
     }
   }
@@ -1491,9 +1481,9 @@ export {
   _ as ConnectionState,
   Be as ConsoleLogger,
   me as MessagePackSerializer,
-  E as MethodError,
+  f as MethodError,
   Ie as NextIdProvider,
-  f as Status,
+  d as Status,
   pe as UConnectClient,
   Se as WebSocketConnection
 };

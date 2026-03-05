@@ -13,6 +13,7 @@ export enum Status {
   OK,
   /**
    * The operation was cancelled, typically by the caller.
+   * For example, Transport closed.
    */
   CANCELLED,
   /**

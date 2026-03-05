@@ -90,9 +90,9 @@ export interface IClientStream<I, O, M = string> {
  * Unary request from client, server stream response.
  */
 export interface IServerStream<O, M = string> {
-  onError: (callback: (error: Error) => void) => void;
-  onMessage: (callback: (data: O) => void) => void;
-  onEnd: (callback: (result: ServerResponse<null | undefined, M>) => void) => void;
+  onError: (callback: (error: Error) => void) => IServerStream<O, M>;
+  onMessage: (callback: (data: O) => void) => IServerStream<O, M>;
+  onEnd: (callback: (result: ServerResponse<null | undefined, M>) => void) => IServerStream<O, M>;
 }
 
 /**
