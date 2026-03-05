@@ -61,7 +61,7 @@ export interface IUConnectClient {
   connect(): Promise<IUConnectClient>;
   disconnect(): Promise<void>;
 
-  service<S extends Record<string, any>>(id: ServicePath): IService<S>;
+  service<S extends Record<string, any> = Record<string, any>>(serviceName: ServicePath): IService<S>;
 }
 
 export class UConnectClient implements IUConnectClient {
@@ -126,8 +126,8 @@ export class UConnectClient implements IUConnectClient {
    * @param {ServicePath} id - The ID of the service.
    * @return {IService<S>} A new TransportService instance.
    */
-  service<S extends Record<string, any>>(id: ServicePath): IService<S> {
-    return new ClientService<S>(this, id, this._options.idProvider);
+  service<S extends Record<string, any>>(serviceName: ServicePath): IService<S> {
+    return new ClientService<S>(this, serviceName, this._options.idProvider);
   }
 
   /**
@@ -136,7 +136,7 @@ export class UConnectClient implements IUConnectClient {
    * @return {Promise<void>} A Promise that resolves once the disposal is complete.
    */
   private dispose(): void {
-    this._tasks.forEach((stream) => stream.onError(new MethodError(Status.UNAVAILABLE, "Transport closed")));
+    this._tasks.forEach((stream) => stream.onError(new MethodError(Status.CANCELLED, "Transport closed")));
     this._tasks.clear();
   }
 

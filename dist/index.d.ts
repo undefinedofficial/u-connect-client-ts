@@ -143,9 +143,9 @@ export declare interface ISerializer {
  * Unary request from client, server stream response.
  */
 export declare interface IServerStream<O, M = string> {
-    onError: (callback: (error: Error) => void) => void;
-    onMessage: (callback: (data: O) => void) => void;
-    onEnd: (callback: (result: ServerResponse<null | undefined, M>) => void) => void;
+    onError: (callback: (error: Error) => void) => IServerStream<O, M>;
+    onMessage: (callback: (data: O) => void) => IServerStream<O, M>;
+    onEnd: (callback: (result: ServerResponse<null | undefined, M>) => void) => IServerStream<O, M>;
 }
 
 export declare type IService<S extends Record<string, (...request: any) => any>> = {
@@ -158,7 +158,7 @@ export declare type IService<S extends Record<string, (...request: any) => any>>
 export declare interface IUConnectClient {
     connect(): Promise<IUConnectClient>;
     disconnect(): Promise<void>;
-    service<S extends Record<string, any>>(id: ServicePath): IService<S>;
+    service<S extends Record<string, any> = Record<string, any>>(serviceName: ServicePath): IService<S>;
 }
 
 export declare interface IUniqueIdProvider {
@@ -257,6 +257,7 @@ export declare enum Status {
     OK = 0,
     /**
      * The operation was cancelled, typically by the caller.
+     * For example, Transport closed.
      */
     CANCELLED = 1,
     /**
@@ -405,7 +406,7 @@ export declare class UConnectClient implements IUConnectClient {
      * @param {ServicePath} id - The ID of the service.
      * @return {IService<S>} A new TransportService instance.
      */
-    service<S extends Record<string, any>>(id: ServicePath): IService<S>;
+    service<S extends Record<string, any>>(serviceName: ServicePath): IService<S>;
     /**
      * Disposed of all tasks if the state is CLOSED.
      *

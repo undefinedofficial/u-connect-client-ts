@@ -10,6 +10,8 @@ import type { IClientStream, ServerResponse } from "./DataType";
 import { DataType } from "./DataType";
 import { PromiseValue } from "./PromiceValue";
 import type { UConnectClient } from "./IUConnectClient";
+import { MethodError } from "./Exceptions";
+import { Status } from "./Status";
 
 export class ClientStream<I, O, M = string> implements IClientStream<I, O, M> {
   private _result: PromiseValue<ServerResponse<O, M>>;
@@ -21,17 +23,17 @@ export class ClientStream<I, O, M = string> implements IClientStream<I, O, M> {
   }
 
   async send(data: I): Promise<void> {
-    if (this._result.has()) return Promise.reject("u-connect-client-ts: client stream error");
-    if (this._next?.has()) await this._next.value();
+    if (this._result.has) return Promise.reject("u-connect-client-ts: client stream error");
+    if (this._next?.has) await this._next.value;
 
     this._next = new PromiseValue();
     this._transport.send({ id: this.id, type: DataType.STREAM_CLIENT, method: this.method as any, request: data });
-    return this._next.value();
+    return this._next.value;
   }
 
   async complete(): Promise<ServerResponse<O, M>> {
-    this._transport.send({ id: this.id, type: DataType.STREAM_END, method: this.method as any });
-    return this._result.value();
+    await this._transport.send({ id: this.id, type: DataType.STREAM_END, method: this.method as any });
+    return this._result.value;
   }
 
   result(result: ServerResponse<O, M>) {
@@ -48,7 +50,7 @@ export class ClientStream<I, O, M = string> implements IClientStream<I, O, M> {
   }
 
   close() {
-    const e = new Error("Transport closed");
+    const e = new MethodError(Status.CANCELLED, "Transport closed");
     this._result.reject(e);
     this._next?.reject(e);
   }

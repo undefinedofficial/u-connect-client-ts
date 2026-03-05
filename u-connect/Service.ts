@@ -98,7 +98,7 @@ export class ClientService<S extends Record<string, any>> implements IService<S>
         (data) => {
           if (data.type === DataType.STREAM_CLIENT) return clientStream.next();
 
-          clientStream.error(new MethodError(Status.INTERNAL, "Internal server error"));
+          clientStream.error(new MethodError(Status.UNKNOWN, "Unknown error occurred in client stream"));
         }
       )
       .then((res) =>
@@ -132,7 +132,7 @@ export class ClientService<S extends Record<string, any>> implements IService<S>
         options,
         (data) => {
           if (data.type === DataType.STREAM_SERVER) return stream.InvokeMessage?.(data.response);
-          stream.InvokeError?.(new MethodError(Status.INTERNAL, "Internal server error"));
+          stream.InvokeError?.(new MethodError(Status.UNKNOWN, "Unknown error occurred in server stream"));
         }
       )
       .then((response) => stream.InvokeEnd?.(response as any))
@@ -149,24 +149,6 @@ export class ClientService<S extends Record<string, any>> implements IService<S>
     const clientStream = new ClientStream<any, any, K>(this._transport, id, fullMethod);
     const serverStream = new ServerStream<any, K>();
 
-    const duplex = {
-      complete() {
-        return clientStream.complete();
-      },
-      send(data: any) {
-        return clientStream.send(data);
-      },
-      onMessage(callback: any) {
-        serverStream.onMessage(callback);
-      },
-      onError(callback: any) {
-        serverStream.onError(callback);
-      },
-      onEnd(callback: any) {
-        serverStream.onEnd(callback);
-      }
-    } as ReturnType<S[K]> & void;
-
     this._transport
       .sendRequest<null | undefined, any, string>(
         { id, method: fullMethod, type: DataType.STREAM_DUPLEX, meta: options?.meta },
@@ -176,7 +158,7 @@ export class ClientService<S extends Record<string, any>> implements IService<S>
 
           if (data.type === DataType.STREAM_SERVER) return serverStream.InvokeMessage?.(data.response);
 
-          const e = new MethodError(Status.INTERNAL, "Internal server error");
+          const e = new MethodError(Status.UNKNOWN, "Unknown error during duplex stream processing");
           clientStream.error(e);
           serverStream.InvokeError?.(e);
         }
@@ -195,6 +177,13 @@ export class ClientService<S extends Record<string, any>> implements IService<S>
         clientStream.error(e);
         serverStream.InvokeError?.(e);
       });
-    return duplex;
+
+    return {
+      complete: clientStream.complete,
+      send: clientStream.send,
+      onMessage: serverStream.onMessage,
+      onError: serverStream.onError,
+      onEnd: serverStream.onEnd
+    } as ReturnType<S[K]> & void;
   }
 }
