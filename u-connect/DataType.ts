@@ -5,6 +5,7 @@
  * Copyright (c) 2024 https://github.com/undefinedofficial
  * Released under the MIT license
  */
+import type { MethodError } from "./Exceptions";
 import type { Status } from "./Status";
 
 export const enum DataType {
@@ -90,7 +91,7 @@ export interface IClientStream<I, O, M = string> {
  * Unary request from client, server stream response.
  */
 export interface IServerStream<O, M = string> {
-  onError: (callback: (error: Error) => void) => IServerStream<O, M>;
+  onError: (callback: (error: MethodError) => void) => IServerStream<O, M>;
   onMessage: (callback: (data: O) => void) => IServerStream<O, M>;
   onEnd: (callback: (result: ServerResponse<null | undefined, M>) => void) => IServerStream<O, M>;
 }
