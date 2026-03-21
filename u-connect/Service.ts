@@ -7,7 +7,7 @@
  */
 
 import type { UConnectClient } from "./IUConnectClient";
-import type { IClientStream, IDuplexStream, IServerStream, RequestMeta, ServiceMethod, ServicePath, UnaryResponse } from "./DataType";
+import type { IClientStream, IDuplexStream, IServerStream, RequestMeta, ServerResponse, ServiceMethod, UnaryResponse } from "./DataType";
 import { ServerStream } from "./ServerStream";
 import { ClientStream } from "./ClientStream";
 import { MethodError } from "./Exceptions";
@@ -57,7 +57,7 @@ export type IService<S extends Record<string, (...request: any) => any>> = {
 };
 
 export class ClientService<S extends Record<string, any>> implements IService<S> {
-  constructor(private _transport: UConnectClient, private _service: ServicePath, private _idProvider: IUniqueIdProvider) {}
+  constructor(private _transport: UConnectClient, private _service: string, private _idProvider: IUniqueIdProvider) {}
 
   unary<K extends keyof S>(
     method: K,
@@ -88,7 +88,7 @@ export class ClientService<S extends Record<string, any>> implements IService<S>
     options?: ServiceMethodOptions
   ): ReturnType<S[K]> extends IClientStream<any, any, any> ? ReturnType<S[K]> : void {
     const id = this._idProvider.getId();
-    const fullMethod = `${this._service}.${method as string}` as ServiceMethod<string, string>;
+    const fullMethod: ServiceMethod = `${this._service}.${method as string}`;
     const clientStream = new ClientStream<any, any, string>(this._transport, id, fullMethod);
 
     this._transport
@@ -179,11 +179,11 @@ export class ClientService<S extends Record<string, any>> implements IService<S>
       });
 
     return {
-      complete: clientStream.complete,
-      send: clientStream.send,
-      onMessage: serverStream.onMessage,
-      onError: serverStream.onError,
-      onEnd: serverStream.onEnd
-    } as ReturnType<S[K]> & void;
+      send: (data: any) => clientStream.send(data),
+      complete: () => clientStream.complete(),
+      onMessage: (cb: (data: any) => void) => serverStream.onMessage(cb),
+      onError: (cb: (data: MethodError) => void) => serverStream.onError(cb),
+      onEnd: (cb: (responce: ServerResponse<null | undefined, K>) => void) => serverStream.onEnd(cb)
+    } as any;
   }
 }

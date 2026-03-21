@@ -46,10 +46,7 @@ export type ResponseMeta<T = Record<string, string>> = Readonly<T>;
 
 export type TransportData<T> = T | Record<string, any>;
 
-/**                                  service */
-export type ServicePath = `${string}/${string}` | string;
-/*                                                                                                service.method */
-export type ServiceMethod<P extends ServicePath, K extends keyof Record<string, any>> = `${P}.${K}`;
+export type ServiceMethod = `${string}.${string}`;
 
 export type TransportError = string;
 
@@ -65,7 +62,7 @@ export interface ServerResponse<O, M> {
  * Unary request from client, single response from server
  */
 export interface UnaryResponse<D> {
-  method: ServiceMethod<ServicePath, string>;
+  method: ServiceMethod;
   status: Status;
   meta?: ResponseMeta | null;
   response: D;
@@ -93,17 +90,17 @@ export interface IServerStream<O, M = string> {
  */
 export interface IDuplexStream<I, O, M = string> extends IClientStream<I, O, M>, IServerStream<O, M> {}
 
-interface IPackage<S extends ServicePath, D extends string> {
+interface IPackage {
   id: string;
   type: PackageType;
-  method: ServiceMethod<S, D>;
+  method: ServiceMethod;
 }
 
-export interface PackageClient<S extends ServicePath, D extends string, P> extends IPackage<S, D> {
+export interface PackageClient<P> extends IPackage {
   request?: P;
   meta?: ResponseMeta | null;
 }
-export interface PackageServer<S extends ServicePath, D extends string, P> extends IPackage<S, D> {
+export interface PackageServer<P> extends IPackage {
   response?: P | null;
   status?: Status;
   meta?: ResponseMeta | null;

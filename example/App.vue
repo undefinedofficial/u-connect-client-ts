@@ -145,8 +145,7 @@ const saySendClientStream = async (message: string) => {
   } catch (error) {
     const { status, message } = error as MethodError;
 
-    console.log(`say client stream error status: ${status}, message: ${message}`);
-    clientStreamLog.value.push(`say client stream error: ${message}`);
+    clientStreamLog.value.push(`say client stream error status: ${Status[status]}, message: ${message}`);
   } finally {
     isSendClientStream.value = false;
   }
@@ -158,7 +157,7 @@ const sayCompleteClientStream = async () => {
     clientStreamLog.value.push(`say client stream complete: status: ${Status[response.status]}, response: ${response.response}`);
   } catch (error) {
     const { status, message } = error as MethodError;
-    console.log(`say client stream error status: ${status}, message: ${message}`);
+    clientStreamLog.value.push(`say client stream complete error status: ${Status[status]}, message: ${message}`);
   } finally {
     isOpenClientStream.value = false;
     stream.value = undefined;
@@ -248,7 +247,7 @@ const saySendDuplexStream = async (message: string) => {
     const { status, message } = error as MethodError;
 
     console.log(`say duplex stream error status: ${status}, message: ${message}`);
-    duplexStreamLog.value.push(`say duplex stream error: ${message}`);
+    duplexStreamLog.value.push(`say duplex stream error status: ${Status[status]}, message: ${message}`);
   } finally {
     isSendDuplexStream.value = false;
   }
@@ -260,7 +259,7 @@ const sayCompleteDuplexStream = async () => {
     duplexStreamLog.value.push(`say duplex stream complete: status: ${Status[response.status]}`);
   } catch (error) {
     const { status, message } = error as MethodError;
-    console.log(`say duplex stream error status: ${status}, message: ${message}`);
+    duplexStreamLog.value.push(`say duplex stream complete error status: ${Status[status]}, message: ${message}`);
   } finally {
     isOpenDuplexStream.value = false;
     duplexStream.value = undefined;
