@@ -8,44 +8,36 @@
 import type { MethodError } from "./Exceptions";
 import type { Status } from "./Status";
 
-export const enum DataType {
-  /** Received */
-  CONNECT = 1,
-  /** Received */
-  DISCONNECT = 2,
-
+export const enum PackageType {
   /**
    * Unary request sent from client, single response received from server.
    */
-  UNARY_CLIENT = 3,
-
-  /** Received */
-  UNARY_SERVER = 4,
+  UNARY_CLIENT,
 
   /**
    * Request sent from client for creating a stream or sending data in stream.
    */
-  STREAM_CLIENT = 5,
+  STREAM_CLIENT,
 
   /**
    * Response received from server for creating a stream or receiving data in stream.
    */
-  STREAM_SERVER = 6,
+  STREAM_SERVER,
 
   /**
    * Request sent to the server for creating a full duplex stream.
    */
-  STREAM_DUPLEX = 7,
+  STREAM_DUPLEX,
 
   /**
    * Notifies Stream data end of sent from client or server.
    */
-  STREAM_END = 8,
+  STREAM_END,
 
   /**
    * Abort any pending request or stream.
    */
-  ABORT = 9
+  ABORT
 }
 
 export type RequestMeta<T = Record<string, string>> = T;
@@ -103,7 +95,7 @@ export interface IDuplexStream<I, O, M = string> extends IClientStream<I, O, M>,
 
 interface IPackage<S extends ServicePath, D extends string> {
   id: string;
-  type: DataType;
+  type: PackageType;
   method: ServiceMethod<S, D>;
 }
 

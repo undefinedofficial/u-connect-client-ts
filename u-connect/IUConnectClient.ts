@@ -10,7 +10,7 @@ import type { PackageClient, PackageServer, ServicePath } from "./DataType";
 import { ClientService, type IService, type ServiceMethodOptions } from "./Service";
 import { MethodError } from "./Exceptions";
 import { Status } from "./Status";
-import { DataType } from "./DataType";
+import { PackageType } from "./DataType";
 import { MessagePackSerializer, type ISerializer } from "./ISerializer";
 import { ConnectionState, type IConnection } from "./IConnection";
 import { NextIdProvider, type IUniqueIdProvider } from "./IUniqueIdProvider";
@@ -189,7 +189,7 @@ export class UConnectClient implements IUConnectClient {
 
           // fix: check and freeing task.
           if (this._tasks.delete(id)) {
-            await this.send({ id, method, type: DataType.ABORT });
+            await this.send({ id, method, type: PackageType.ABORT });
             onError(e);
           }
         };
@@ -214,7 +214,7 @@ export class UConnectClient implements IUConnectClient {
   private async onMessage(message: PackageServer<any, string, any>): Promise<void> {
     const task = this._tasks.get(message.id);
     switch (message.type) {
-      case DataType.UNARY_CLIENT: {
+      case PackageType.UNARY_CLIENT: {
         if (task) {
           this._options.logger?.info(
             `unary responce ${message.method} ${message.status}(${Status[message.status!]}) ${
@@ -229,15 +229,15 @@ export class UConnectClient implements IUConnectClient {
         break;
       }
 
-      case DataType.STREAM_CLIENT:
-      case DataType.STREAM_SERVER:
+      case PackageType.STREAM_CLIENT:
+      case PackageType.STREAM_SERVER:
         if (task) {
           this._options.logger?.info("stream data " + message.method);
           task.onMessage?.(message);
         }
         break;
 
-      case DataType.STREAM_END: {
+      case PackageType.STREAM_END: {
         if (task) {
           this._options.logger?.info(
             `stream end ${message.method} ${message.status}(${Status[message.status!]}) ${
@@ -252,7 +252,7 @@ export class UConnectClient implements IUConnectClient {
         break;
       }
 
-      case DataType.ABORT: {
+      case PackageType.ABORT: {
         this._options.logger?.info(`abort request ${message.method}`);
 
         if (task) task.onError(new MethodError(message.status ?? Status.ABORTED, message.error ?? "Request aborted"));

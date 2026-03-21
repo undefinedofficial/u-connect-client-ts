@@ -178,7 +178,7 @@ export class WebSocketConnection implements IConnection {
     if (this._socket?.readyState !== 0 && this._socket?.readyState !== 1) {
       // if (this._debug) debugWrite("create socket");
 
-      this._socket = new this._client(this._url, "u-connect-web");
+      this._socket = new this._client(this._url, "u-connect-web2");
       this._socket.binaryType = "arraybuffer";
 
       /**

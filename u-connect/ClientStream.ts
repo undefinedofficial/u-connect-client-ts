@@ -7,7 +7,7 @@
  */
 
 import type { IClientStream, ServerResponse } from "./DataType";
-import { DataType } from "./DataType";
+import { PackageType } from "./DataType";
 import { PromiseValue } from "./PromiceValue";
 import type { UConnectClient } from "./IUConnectClient";
 import { MethodError } from "./Exceptions";
@@ -27,12 +27,12 @@ export class ClientStream<I, O, M = string> implements IClientStream<I, O, M> {
     if (this._next?.has) await this._next.value;
 
     this._next = new PromiseValue();
-    this._transport.send({ id: this.id, type: DataType.STREAM_CLIENT, method: this.method as any, request: data });
+    this._transport.send({ id: this.id, type: PackageType.STREAM_CLIENT, method: this.method as any, request: data });
     return this._next.value;
   }
 
   async complete(): Promise<ServerResponse<O, M>> {
-    await this._transport.send({ id: this.id, type: DataType.STREAM_END, method: this.method as any });
+    await this._transport.send({ id: this.id, type: PackageType.STREAM_END, method: this.method as any });
     return this._result.value;
   }
 
