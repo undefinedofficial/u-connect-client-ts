@@ -5,46 +5,39 @@
  * Copyright (c) 2024 https://github.com/undefinedofficial
  * Released under the MIT license
  */
+import type { MethodError } from "./Exceptions";
 import type { Status } from "./Status";
 
-export const enum DataType {
-  /** Received */
-  CONNECT = 1,
-  /** Received */
-  DISCONNECT = 2,
-
+export const enum PackageType {
   /**
    * Unary request sent from client, single response received from server.
    */
-  UNARY_CLIENT = 3,
-
-  /** Received */
-  UNARY_SERVER = 4,
+  UNARY_CLIENT,
 
   /**
    * Request sent from client for creating a stream or sending data in stream.
    */
-  STREAM_CLIENT = 5,
+  STREAM_CLIENT,
 
   /**
    * Response received from server for creating a stream or receiving data in stream.
    */
-  STREAM_SERVER = 6,
+  STREAM_SERVER,
 
   /**
    * Request sent to the server for creating a full duplex stream.
    */
-  STREAM_DUPLEX = 7,
+  STREAM_DUPLEX,
 
   /**
    * Notifies Stream data end of sent from client or server.
    */
-  STREAM_END = 8,
+  STREAM_END,
 
   /**
    * Abort any pending request or stream.
    */
-  ABORT = 9
+  ABORT
 }
 
 export type RequestMeta<T = Record<string, string>> = T;
@@ -53,10 +46,7 @@ export type ResponseMeta<T = Record<string, string>> = Readonly<T>;
 
 export type TransportData<T> = T | Record<string, any>;
 
-/**                                  service */
-export type ServicePath = `${string}/${string}` | string;
-/*                                                                                                service.method */
-export type ServiceMethod<P extends ServicePath, K extends keyof Record<string, any>> = `${P}.${K}`;
+export type ServiceMethod = `${string}.${string}`;
 
 export type TransportError = string;
 
@@ -72,7 +62,7 @@ export interface ServerResponse<O, M> {
  * Unary request from client, single response from server
  */
 export interface UnaryResponse<D> {
-  method: ServiceMethod<ServicePath, string>;
+  method: ServiceMethod;
   status: Status;
   meta?: ResponseMeta | null;
   response: D;
@@ -90,7 +80,7 @@ export interface IClientStream<I, O, M = string> {
  * Unary request from client, server stream response.
  */
 export interface IServerStream<O, M = string> {
-  onError: (callback: (error: Error) => void) => IServerStream<O, M>;
+  onError: (callback: (error: MethodError) => void) => IServerStream<O, M>;
   onMessage: (callback: (data: O) => void) => IServerStream<O, M>;
   onEnd: (callback: (result: ServerResponse<null | undefined, M>) => void) => IServerStream<O, M>;
 }
@@ -100,17 +90,17 @@ export interface IServerStream<O, M = string> {
  */
 export interface IDuplexStream<I, O, M = string> extends IClientStream<I, O, M>, IServerStream<O, M> {}
 
-interface IPackage<S extends ServicePath, D extends string> {
+interface IPackage {
   id: string;
-  type: DataType;
-  method: ServiceMethod<S, D>;
+  type: PackageType;
+  method: ServiceMethod;
 }
 
-export interface PackageClient<S extends ServicePath, D extends string, P> extends IPackage<S, D> {
+export interface PackageClient<P> extends IPackage {
   request?: P;
   meta?: ResponseMeta | null;
 }
-export interface PackageServer<S extends ServicePath, D extends string, P> extends IPackage<S, D> {
+export interface PackageServer<P> extends IPackage {
   response?: P | null;
   status?: Status;
   meta?: ResponseMeta | null;

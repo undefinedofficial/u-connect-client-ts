@@ -7,11 +7,11 @@
  */
 
 import type { UConnectClient } from "./IUConnectClient";
-import type { IClientStream, IDuplexStream, IServerStream, RequestMeta, ServiceMethod, ServicePath, UnaryResponse } from "./DataType";
+import type { IClientStream, IDuplexStream, IServerStream, RequestMeta, ServerResponse, ServiceMethod, UnaryResponse } from "./DataType";
 import { ServerStream } from "./ServerStream";
 import { ClientStream } from "./ClientStream";
 import { MethodError } from "./Exceptions";
-import { DataType } from "./DataType";
+import { PackageType } from "./DataType";
 import { Status } from "./Status";
 import type { IUniqueIdProvider } from "./IUniqueIdProvider";
 
@@ -57,7 +57,7 @@ export type IService<S extends Record<string, (...request: any) => any>> = {
 };
 
 export class ClientService<S extends Record<string, any>> implements IService<S> {
-  constructor(private _transport: UConnectClient, private _service: ServicePath, private _idProvider: IUniqueIdProvider) {}
+  constructor(private _transport: UConnectClient, private _service: string, private _idProvider: IUniqueIdProvider) {}
 
   unary<K extends keyof S>(
     method: K,
@@ -69,7 +69,7 @@ export class ClientService<S extends Record<string, any>> implements IService<S>
         {
           id: this._idProvider.getId(),
           method: `${this._service}.${method as string}`,
-          type: DataType.UNARY_CLIENT,
+          type: PackageType.UNARY_CLIENT,
           request,
           meta: options?.meta
         },
@@ -88,15 +88,15 @@ export class ClientService<S extends Record<string, any>> implements IService<S>
     options?: ServiceMethodOptions
   ): ReturnType<S[K]> extends IClientStream<any, any, any> ? ReturnType<S[K]> : void {
     const id = this._idProvider.getId();
-    const fullMethod = `${this._service}.${method as string}` as ServiceMethod<string, string>;
+    const fullMethod: ServiceMethod = `${this._service}.${method as string}`;
     const clientStream = new ClientStream<any, any, string>(this._transport, id, fullMethod);
 
     this._transport
       .sendRequest<null | undefined, any, string>(
-        { id, method: `${this._service}.${method as string}`, type: DataType.STREAM_CLIENT, request: null, meta: options?.meta },
+        { id, method: `${this._service}.${method as string}`, type: PackageType.STREAM_CLIENT, request: null, meta: options?.meta },
         options,
         (data) => {
-          if (data.type === DataType.STREAM_CLIENT) return clientStream.next();
+          if (data.type === PackageType.STREAM_CLIENT) return clientStream.next();
 
           clientStream.error(new MethodError(Status.UNKNOWN, "Unknown error occurred in client stream"));
         }
@@ -124,14 +124,14 @@ export class ClientService<S extends Record<string, any>> implements IService<S>
       .sendRequest<Parameters<S[K]>[0], null | undefined, string>(
         {
           id: this._idProvider.getId(),
-          type: DataType.STREAM_SERVER,
+          type: PackageType.STREAM_SERVER,
           method: `${this._service}.${method as string}`,
           request,
           meta: options?.meta
         },
         options,
         (data) => {
-          if (data.type === DataType.STREAM_SERVER) return stream.InvokeMessage?.(data.response);
+          if (data.type === PackageType.STREAM_SERVER) return stream.InvokeMessage?.(data.response);
           stream.InvokeError?.(new MethodError(Status.UNKNOWN, "Unknown error occurred in server stream"));
         }
       )
@@ -151,12 +151,12 @@ export class ClientService<S extends Record<string, any>> implements IService<S>
 
     this._transport
       .sendRequest<null | undefined, any, string>(
-        { id, method: fullMethod, type: DataType.STREAM_DUPLEX, meta: options?.meta },
+        { id, method: fullMethod, type: PackageType.STREAM_DUPLEX, meta: options?.meta },
         options,
         (data) => {
-          if (data.type === DataType.STREAM_CLIENT) return clientStream.next();
+          if (data.type === PackageType.STREAM_CLIENT) return clientStream.next();
 
-          if (data.type === DataType.STREAM_SERVER) return serverStream.InvokeMessage?.(data.response);
+          if (data.type === PackageType.STREAM_SERVER) return serverStream.InvokeMessage?.(data.response);
 
           const e = new MethodError(Status.UNKNOWN, "Unknown error during duplex stream processing");
           clientStream.error(e);
@@ -179,11 +179,11 @@ export class ClientService<S extends Record<string, any>> implements IService<S>
       });
 
     return {
-      complete: clientStream.complete,
-      send: clientStream.send,
-      onMessage: serverStream.onMessage,
-      onError: serverStream.onError,
-      onEnd: serverStream.onEnd
-    } as ReturnType<S[K]> & void;
+      send: (data: any) => clientStream.send(data),
+      complete: () => clientStream.complete(),
+      onMessage: (cb: (data: any) => void) => serverStream.onMessage(cb),
+      onError: (cb: (data: MethodError) => void) => serverStream.onError(cb),
+      onEnd: (cb: (responce: ServerResponse<null | undefined, K>) => void) => serverStream.onEnd(cb)
+    } as any;
   }
 }

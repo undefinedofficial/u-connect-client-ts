@@ -6,11 +6,11 @@
  * Released under the MIT license
  */
 
-import type { PackageClient, PackageServer, ServicePath } from "./DataType";
+import type { PackageClient, PackageServer } from "./DataType";
 import { ClientService, type IService, type ServiceMethodOptions } from "./Service";
 import { MethodError } from "./Exceptions";
 import { Status } from "./Status";
-import { DataType } from "./DataType";
+import { PackageType } from "./DataType";
 import { MessagePackSerializer, type ISerializer } from "./ISerializer";
 import { ConnectionState, type IConnection } from "./IConnection";
 import { NextIdProvider, type IUniqueIdProvider } from "./IUniqueIdProvider";
@@ -20,7 +20,7 @@ interface ITask<T> {
   /**
    * Callback for when a message is received from the server.
    */
-  onMessage?: (data: PackageServer<any, string, T>) => void;
+  onMessage?: (data: PackageServer<T>) => void;
   /**
    * Callback for when the server ends the task.
    */
@@ -61,7 +61,7 @@ export interface IUConnectClient {
   connect(): Promise<IUConnectClient>;
   disconnect(): Promise<void>;
 
-  service<S extends Record<string, any> = Record<string, any>>(serviceName: ServicePath): IService<S>;
+  service<S extends Record<string, any> = Record<string, any>>(serviceName: string): IService<S>;
 }
 
 export class UConnectClient implements IUConnectClient {
@@ -126,7 +126,7 @@ export class UConnectClient implements IUConnectClient {
    * @param {ServicePath} id - The ID of the service.
    * @return {IService<S>} A new TransportService instance.
    */
-  service<S extends Record<string, any>>(serviceName: ServicePath): IService<S> {
+  service<S extends Record<string, any>>(serviceName: string): IService<S> {
     return new ClientService<S>(this, serviceName, this._options.idProvider);
   }
 
@@ -142,10 +142,10 @@ export class UConnectClient implements IUConnectClient {
 
   /**
    * Serializes and sends a message over the WebSocket connection.
-   * @param {PackageClient<string, string, I>} message - The message to send.
+   * @param {PackageClient<I>} message - The message to send.
    */
-  send<I>(message: PackageClient<string, string, I>) {
-    return this._socket.send(this._options.serializer.serialize(message as PackageClient<any, string, I>));
+  send<I>(message: PackageClient<I>) {
+    return this._socket.send(this._options.serializer.serialize(message as PackageClient<I>));
   }
 
   /**
@@ -154,10 +154,10 @@ export class UConnectClient implements IUConnectClient {
    * @param options The options for the message.
    */
   async sendRequest<I, O, M extends keyof Record<string, any>>(
-    message: PackageClient<any, string, I>,
+    message: PackageClient<I>,
     options?: ServiceMethodOptions,
-    onMessage?: (data: PackageServer<ServicePath, string, O>) => void
-  ): Promise<PackageServer<ServicePath, M, O>> {
+    onMessage?: (data: PackageServer<O>) => void
+  ): Promise<PackageServer<O>> {
     /**
      * If the transport is not open, open it and wait for it to be opened before sending the message.
      */
@@ -180,7 +180,7 @@ export class UConnectClient implements IUConnectClient {
     /**
      * Add the message to the queue tasks and wait for the response
      */
-    return new Promise<PackageServer<ServicePath, M, O>>((onEnd, onError) => {
+    return new Promise<PackageServer<O>>((onEnd, onError) => {
       this._tasks.set(message.id, { onMessage, onEnd, onError });
 
       if (options?.abort || options?.timeout) {
@@ -189,7 +189,7 @@ export class UConnectClient implements IUConnectClient {
 
           // fix: check and freeing task.
           if (this._tasks.delete(id)) {
-            await this.send({ id, method, type: DataType.ABORT });
+            await this.send({ id, method, type: PackageType.ABORT });
             onError(e);
           }
         };
@@ -202,7 +202,7 @@ export class UConnectClient implements IUConnectClient {
         }
       }
       this._options.logger?.info(`Sending request ${message.method}`);
-      this.send(message as PackageClient<any, string, I>);
+      this.send(message as PackageClient<I>);
     });
   }
 
@@ -211,10 +211,10 @@ export class UConnectClient implements IUConnectClient {
    * @param {PackageServer<any, string, any>} message - The message received from the server.
    * @return {Promise<void>} A promise that resolves when the message is handled.
    */
-  private async onMessage(message: PackageServer<any, string, any>): Promise<void> {
+  private async onMessage(message: PackageServer<any>): Promise<void> {
     const task = this._tasks.get(message.id);
     switch (message.type) {
-      case DataType.UNARY_CLIENT: {
+      case PackageType.UNARY_CLIENT: {
         if (task) {
           this._options.logger?.info(
             `unary responce ${message.method} ${message.status}(${Status[message.status!]}) ${
@@ -229,15 +229,15 @@ export class UConnectClient implements IUConnectClient {
         break;
       }
 
-      case DataType.STREAM_CLIENT:
-      case DataType.STREAM_SERVER:
+      case PackageType.STREAM_CLIENT:
+      case PackageType.STREAM_SERVER:
         if (task) {
           this._options.logger?.info("stream data " + message.method);
           task.onMessage?.(message);
         }
         break;
 
-      case DataType.STREAM_END: {
+      case PackageType.STREAM_END: {
         if (task) {
           this._options.logger?.info(
             `stream end ${message.method} ${message.status}(${Status[message.status!]}) ${
@@ -252,7 +252,7 @@ export class UConnectClient implements IUConnectClient {
         break;
       }
 
-      case DataType.ABORT: {
+      case PackageType.ABORT: {
         this._options.logger?.info(`abort request ${message.method}`);
 
         if (task) task.onError(new MethodError(message.status ?? Status.ABORTED, message.error ?? "Request aborted"));

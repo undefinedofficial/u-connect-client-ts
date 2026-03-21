@@ -143,7 +143,7 @@ export declare interface ISerializer {
  * Unary request from client, server stream response.
  */
 export declare interface IServerStream<O, M = string> {
-    onError: (callback: (error: Error) => void) => IServerStream<O, M>;
+    onError: (callback: (error: MethodError) => void) => IServerStream<O, M>;
     onMessage: (callback: (data: O) => void) => IServerStream<O, M>;
     onEnd: (callback: (result: ServerResponse<null | undefined, M>) => void) => IServerStream<O, M>;
 }
